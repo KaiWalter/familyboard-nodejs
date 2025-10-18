@@ -19,20 +19,11 @@ paths:
                 type: object
                 properties:
                   auth:
-                    type: object
-                    properties:
-                      status:
-                        type: string
-                        enum: [OK, Refreshing, Warning, Error]
-                      expiresAt:
-                        type: string
-                        format: date-time
-                      remainingMinutes:
-                        type: number
-                  calendarCacheAgeSeconds:
+                    $ref: '#/components/schemas/AuthStatus'
+                  eventsCacheAgeMs:
                     type: number
-                  photoCount:
-                    type: integer
+                  photosCacheAgeMs:
+                    type: number
   /api/config:
     get:
       summary: Retrieve current configuration
@@ -106,6 +97,75 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PhotoAsset'
+  /signin:
+    get:
+      summary: Initiate confidential authorization code sign-in
+      operationId: initiateSignin
+      responses:
+        '200':
+          description: Authorization initiation response (contains provider URL)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorizationUrl: { type: string }
+                  state: { type: string }
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Misconfiguration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /callback:
+    get:
+      summary: Authorization code callback endpoint
+      operationId: authCallback
+      parameters:
+        - in: query
+          name: code
+          schema: { type: string }
+          required: true
+        - in: query
+          name: state
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Authentication succeeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        '400':
+          description: Invalid or mismatched state / missing params
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /signout:
+    post:
+      summary: Sign out and clear stored tokens
+      operationId: signOut
+      responses:
+        '204':
+          description: Signed out (no content)
+        '200':
+          description: Signed out (legacy variant)
+        '400':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     CalendarEvent:
@@ -178,4 +238,14 @@ components:
       properties:
         error: { type: string }
         details: { type: string }
+    AuthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [OK, Refreshing, Warning, Error, NO_TOKEN]
+        expiresAt: { type: string, format: date-time }
+        remainingMinutes: { type: number }
+        rotation: { type: number }
+        configured: { type: boolean }
 security: []

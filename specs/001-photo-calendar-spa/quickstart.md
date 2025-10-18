@@ -19,13 +19,14 @@ PORT=3000
 ```
 If `.env` not used, export variables directly in shell.
 
-## 3. First-Time Auth (Device Code Flow Option)
-1. Start server in auth-init mode (future script): `node src/server/auth-init.js` (to be implemented).
-2. Follow printed device code URL; sign in once.
-3. Tokens saved to `data/tokens.json`.
-4. Stop auth-init process after success.
-
-(Alternative Authorization Code flow may be documented later.)
+## 3. First-Time Auth (Confidential Authorization Code Flow)
+1. Ensure environment variables (client id, secret, scopes) and `redirectUri` in config are set.
+2. Start server: `node src/server/index.js`.
+3. GET `http://localhost:3000/signin` to receive JSON with `authorizationUrl` and `state`.
+4. Open `authorizationUrl` in a browser; complete provider login & consent.
+5. Provider redirects to `/callback?code=...&state=...`; server exchanges code and stores tokens at `data/tokens.json`.
+6. Subsequent launches reuse stored tokens automatically until refresh or revocation.
+7. POST `/signout` (or delete token file) to force re-authentication.
 
 ## 4. Configuration File
 Create `data/config.json`:
@@ -67,9 +68,10 @@ chromium --kiosk --app=http://localhost:3000 --disable-pinch --overscroll-histor
 - Current day cell highlighted.
 
 ## 9. Logs & Troubleshooting
-- Console output indicates auth refresh attempts (statuses: OK, Refreshing, Warning, Error).
-- If network drops: events fallback served from `data/events.json`.
-- Token refresh failures: check timestamp in `data/tokens.json` and remaining minutes reported by `/api/status`.
+- Auth events: JSON lines (e.g., `auth.signin.initiated`, `auth.callback.tokens_persisted`, `auth.refresh.success`, `auth.refresh.failed`, `auth.signout`).
+- If network drops: events fallback served from `data/events.json`; status may show Warning.
+- Refresh failures trigger retries with exponential backoff; after exhaustion tokens remain until re-auth required.
+- Remaining minutes & status visible via `/api/status`.
 
 ## 10. Safe Shutdown
 - Ctrl+C server process.
@@ -89,12 +91,15 @@ kill $SERVER_PID
 Automated tests will use `node:test` once added.
 
 ## 13. Security Notes
-- Restrict permissions: `chmod 600 data/tokens.json`.
-- Do not expose port publicly unless behind reverse proxy + auth.
+- Restrict permissions: `chmod 600 data/tokens.json` (and config containing client secret).
+- Never log raw token or client secret values (masking utility enforced in code).
+- Default rate limit: 5 failed sign-in initiations per minute; adjust in config if needed.
+- Use reverse proxy & network segmentation for production kiosk deployments.
 
 ## 14. Next Enhancements (Optional)
-- Add script for device code auth.
-- Add event DST test fixture.
-- Add image preload for smoother transitions.
+- Device code fallback flow (headless maintenance usage).
+- Event DST test fixture.
+- Image preload for smoother transitions.
+- Token at-rest encryption.
 
 End of Quickstart.

@@ -88,19 +88,24 @@ settings correctly; placeholder panels respect ratio values.
 
 ---
 
-### User Story 4 - Operator-Less Auth & Token Refresh (Priority: P4)
+### User Story 4 - Confidential Sign-In & Unattended Refresh (Priority: P4)
 
-An operator performs a one-time interactive authentication (e.g., via SSH tunnel with browser access) to Microsoft services (Graph for calendars & OneDrive). After this, stored tokens on the target system enable automatic, scheduled refreshes without further human intervention.
+An operator (or authorized user) initiates a confidential sign-in flow via a public `/signin` entry point which redirects to the external authorization provider. Upon successful consent the user returns to `/callback` where an authorization code is exchanged for a token set (access + refresh). Thereafter the system operates unattended: stored tokens enable scheduled, proactive refresh and secure access to calendar and photo resources without further human action. A sign-out action can intentionally clear the session for privacy (lower frequency use case).
 
-**Why this priority**: Enables unattended display device operation (e.g., wall-mounted screen) ensuring calendar/photo data stays current.
+**Why this priority**: A secure, auditable authentication foundation is required before relying on unattended operation; it supersedes earlier assumptions of pre-provided tokens.
 
-**Independent Test**: With only this story implemented, system uses previously stored tokens to fetch calendar events and photo list at startup and successfully refreshes tokens before expiry.
+**Independent Test**: Visiting `/signin` when unauthenticated results in provider redirect; returning to `/callback` with valid parameters establishes an authenticated session, persists tokens, and subsequent data fetches succeed. Refresh occurs before expiry without user involvement.
 
 **Acceptance Scenarios**:
 
-1. **Given** valid tokens stored locally, **When** app starts, **Then** authentication uses stored tokens without prompting for login.
-2. **Given** token nearing expiry (e.g., <10 minutes remaining), **When** background refresh job runs, **Then** new tokens are stored and subsequent API calls succeed.
-3. **Given** refresh fails due to network error, **When** retry logic activates, **Then** system retries at defined interval and logs concise warning without crashing.
+1. **Given** an unauthenticated session, **When** `/signin` is accessed, **Then** a unique cryptographically strong state is bound and the user is redirected to the provider with required parameters.
+2. **Given** a successful provider login and consent, **When** the user returns to `/callback` with valid code & matching state, **Then** the code is exchanged for tokens and the session becomes authenticated.
+3. **Given** valid stored tokens, **When** the app restarts, **Then** it uses them without interactive prompts.
+4. **Given** an access token nearing expiry, **When** refresh logic triggers, **Then** a new token set is stored (rotating secrets) before expiry.
+5. **Given** a callback request with missing or mismatched state, **When** processed, **Then** it is rejected and no tokens are stored.
+6. **Given** a user invokes sign-out, **When** processed, **Then** tokens and session markers are cleared and protected data requests require a new sign-in.
+7. **Given** a refresh token revoked upstream, **When** refresh attempt fails with revocation semantics, **Then** local tokens are cleared and user is prompted (via status messaging) to re-authenticate.
+8. **Given** repeated failed sign-in initiations, **When** threshold exceeded, **Then** further attempts are temporarily rate-limited with a non-sensitive message.
 
 ### Edge Cases
 
@@ -109,6 +114,12 @@ An operator performs a one-time interactive authentication (e.g., via SSH tunnel
 - Photo missing or unsupported format (skip and move to next; record in console).
 - Folder with very large images (display scaled version; do not attempt client-side heavy processing beyond basic CSS sizing).
 - Timezone shifts (midnight local rollover updates 3-week range without manual refresh).
+- Callback received without code/state parameters (user manually navigated) → instruct restart via `/signin`.
+- Authorization code replay (already used/expired) → reject and advise fresh sign-in.
+- Concurrent callbacks for same state value → only first accepted; others rejected safely.
+- Invalid confidential credentials configuration → `/signin` fails fast with diagnostic (non-sensitive) user-facing message and internal audit entry.
+- Provider denial/cancellation → present neutral cancellation message with retry path.
+- Excessive failed sign-in attempts → trigger temporary rate limiting (configurable threshold) logged for audit.
 
 ## Requirements *(mandatory)*
 
@@ -166,18 +177,39 @@ An operator performs a one-time interactive authentication (e.g., via SSH tunnel
 - **FR-038**: System MUST implement a monochrome (black/white/grayscale) color palette avoiding saturated colors for calendar structural elements and events.
 - **FR-039**: System SHOULD ensure text/background contrast meets an accessibility baseline (assumption: contrast ratio ≥4.5:1 for primary text) without specifying implementation details.
 
+// Authentication & Security (merged from confidential sign-in feature; supersedes earlier implicit auth assumptions)
+- **FR-040**: System MUST expose a publicly reachable `/signin` entry point initiating an external authorization request for unauthenticated sessions.
+- **FR-041**: System MUST generate and bind a cryptographically strong, unique state value to each sign-in initiation and validate it on `/callback` to prevent request forgery.
+- **FR-042**: System MUST redirect to the authorization provider including required parameters (client identifier, requested scopes, redirect URI, state) without leaking confidential secrets in the browser-visible URL beyond industry-normal parameters.
+- **FR-043**: System MUST process `/callback` verifying presence & integrity of authorization response parameters (code, state, and any error indicators) before proceeding.
+- **FR-044**: System MUST exchange a valid authorization code for a token set (access token, refresh token if granted, issued/expiry metadata) prior to marking the session authenticated.
+- **FR-045**: System MUST securely persist the token set so protected resource requests succeed without re-prompt until expiry or revocation, ensuring tokens are not exposed via unauthenticated endpoints or verbose logs (only masked references allowed).
+- **FR-046**: System MUST refresh expiring access tokens using the stored refresh token proactively (before expiry) and, when a new refresh token is issued, MUST rotate and discard prior values.
+- **FR-047**: System MUST provide a sign-out action that invalidates the session and clears all locally stored token material and session indicators.
+- **FR-048**: System MUST reject any `/callback` request lacking a valid matching state or containing an error parameter, presenting a user-readable restart instruction and storing no tokens.
+- **FR-049**: System MUST rate-limit repeated failed sign-in initiations above a configurable threshold to mitigate abuse without impeding legitimate single attempts.
+- **FR-050**: System MUST record audit entries for sign-in success, sign-out, refresh failures, and security-relevant rejections (state mismatch, invalid/replayed code) without storing raw secrets.
+- **FR-051**: System MUST ensure stored tokens are bound to a specific session context and are not reused across unrelated sessions.
+- **FR-052**: System MUST present a clear user-facing outcome in terminal states: success (authenticated), need to retry (expired/invalid code), cancellation (user/provider denial), or error (configuration issue).
+- **FR-053**: System MUST enforce configured scope boundaries disallowing escalation to unapproved scopes at initiation or callback validation.
+- **FR-054**: System MUST handle user/provider denial gracefully by presenting a neutral cancellation message with a retry path.
+- **FR-055**: System MUST detect upstream revocation (failed refresh suggesting revocation) and clear local tokens prompting re-authentication.
+- **FR-056**: System MUST enable protected data fetch logic to distinguish authenticated vs unauthenticated requests reliably after sign-in or sign-out actions.
+
 No critical ambiguities require clarification beyond reasonable defaults; no NEEDS CLARIFICATION markers added.
 
 ### Key Entities *(include if feature involves data)*
 
-- **CalendarEvent**: Represents a single event (id, title, startDateTime, endDateTime, allDay flag, sourceCalendarId).
-- **CalendarConfig**: User configuration for list of calendar IDs (array of strings, max length 5).
-- **PhotoAsset**: Represents an image (filename, displayName, url/reference, orientation metadata optional).
+- **CalendarEvent**: Represents a single event (id, title, startDateTime, endDateTime, allDay flag, sourceCalendarId) plus derived localized displayStart/displayEnd; continuation flag for multi-day all-day events.
+- **CalendarConfig**: Configuration for list of calendar IDs (array of strings, max length 5).
+- **PhotoAsset**: Image (filename, displayName, reference, orientation metadata optional).
 - **PhotoRotationSettings**: Interval (seconds), paused flag, lastShownIndex.
 - **LayoutSettings**: Golden ratio enabled flag, computed widths (calendarWidthPx, photoWidthPx) derived at runtime.
-- **AppConfig**: Aggregates CalendarConfig, PhotoRotationSettings, LayoutSettings, OneDrive folder path.
-- **AuthTokenStore**: Represents persisted credential set (accessToken, refreshToken, expiresAt, scopeHash, lastRefreshAttempt, status).
-  - Extended: stores original UTC start/end for events and derived localized displayStart/displayEnd; continuation flag for multi-day all-day events.
+- **AppConfig**: Aggregates CalendarConfig, PhotoRotationSettings, LayoutSettings, OneDrive folder path, timezone, locale preferences.
+- **AuthSession**: In-progress or established authentication context (state value, creation time, status, expiry timestamp).
+- **TokenSet**: Access token, refresh token (if provided), issued time, expiry time, scope list, rotation counter, lastRefreshAttempt, status.
+- **ClientCredentials**: Confidential configuration (client identifier, secret, permitted scopes, redirect URI(s)); never exposed via public endpoints.
+- **AuditEvent**: Structured record capturing event type (sign-in success, sign-out, refresh attempt, error/security rejection), timestamp, session reference, sanitized reason/details.
 
 ## Success Criteria *(mandatory)*
 
@@ -200,14 +232,23 @@ No critical ambiguities require clarification beyond reasonable defaults; no NEE
 - **SC-010**: Calendar auto-refresh executes successfully at 180s intervals with ≥95% success rate over 30 minutes under stable network.
 - **SC-011**: 100% of sampled events (≥30 mixed timed/all-day/multi-day including DST boundary) display correct localized times, ordering (all-day first), and repetition rules in validation tests.
 - **SC-012**: In a usability check, >90% of observers identify the current day cell within 2 seconds using only the monochrome border highlight.
+- **SC-013**: ≥95% of successful sign-ins (from `/signin` initiation to authenticated state) complete in under 15 seconds of active user interaction time.
+- **SC-014**: 100% of callback requests with invalid or mismatched state are rejected without storing any token data.
+- **SC-015**: 0% of raw token values appear in user-visible responses or logs (verified by targeted review / automated scan sampling).
+- **SC-016**: Token refresh extends authenticated sessions with <2% local refresh failure rate (excluding upstream provider errors) over a representative observation window.
+- **SC-017**: Sign-out clears tokens/session indicators so that protected data access attempts post sign-out fail 100% until new sign-in.
+- **SC-018**: Rate limiting prevents more than the configured threshold of failed sign-in initiations per minute per source with <1% false positive blocking.
+- **SC-019**: User/provider cancellation yields a retry path that ≥90% of users successfully utilize within one additional attempt.
+- **SC-020**: ≥98% of security-relevant events (state mismatch, invalid code, refresh failure) have corresponding audit entries.
 
 ## Assumptions
 
-1. Authentication for Microsoft APIs will use existing personal access context (e.g., OAuth token acquisition handled externally or minimal integrated login later).
-2. Caching uses simple in-memory or local storage—no database layer introduced initially.
-3. Timezone based on user browser locale; all-day events displayed distinctly.
-4. Performance targets are modest; no server-side rendering required for MVP.
-5. OneDrive folder contains only images; non-image files ignored.
+1. Confidential client sign-in flow (authorization code + refresh capability) is supported by the external provider; redirect URI `/callback` is pre-registered.
+2. Secure at-rest storage (file system with appropriate OS permissions or equivalent) is available for token material; encryption specifics deferred (implementation detail).
+3. Caching uses simple in-memory + persisted JSON/token files—no database layer initially.
+4. Timezone and locale are configurable (defaults derived from deployment environment if not set); 24-hour clock acceptable for target locales.
+5. OneDrive (or equivalent photo source) folder contains primarily image assets; non-image files are ignored gracefully.
+6. Single active session context is sufficient for kiosk/family display use case (multi-user role differentiation out of scope).
 
 ## Out of Scope (Current Version)
 

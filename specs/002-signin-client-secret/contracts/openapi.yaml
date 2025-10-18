@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: Confidential Sign-In API
+  version: 0.1.0
+  description: Endpoints enabling confidential authorization code sign-in flow.
+servers:
+  - url: http://localhost:3000
+paths:
+  /signin:
+    get:
+      summary: Initiate sign-in
+      description: Generates state and redirects user-agent to authorization provider.
+      responses:
+        '302':
+          description: Redirect to authorization server
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Authorization server URL containing state parameter
+        '400':
+          description: Invalid configuration / rate limit exceeded
+  /callback:
+    get:
+      summary: Authorization server redirect handler
+      parameters:
+        - in: query
+          name: code
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: state
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: error
+          schema:
+            type: string
+          required: false
+      responses:
+        '302':
+          description: Redirect to application landing page after processing
+        '400':
+          description: State mismatch or missing code
+        '500':
+          description: Token exchange failure
+  /signout:
+    post:
+      summary: Invalidate current session
+      description: Clears persisted tokens and marks session terminated.
+      responses:
+        '204':
+          description: Sign-out successful (no content)
+        '401':
+          description: No active session
+  /status/auth:
+    get:
+      summary: Auth status
+      description: Provides current authentication state details (sanitized).
+      responses:
+        '200':
+          description: Status payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                  expiresInSeconds:
+                    type: integer
+                  rotation:
+                    type: integer
+  /protected/example:
+    get:
+      summary: Example protected resource
+      responses:
+        '200':
+          description: Authorized access
+        '401':
+          description: Not authenticated
+components:
+  securitySchemes:
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: sid
+  schemas:
+    AuthStatus:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        expiresInSeconds:
+          type: integer
+        rotation:
+          type: integer
+security: []

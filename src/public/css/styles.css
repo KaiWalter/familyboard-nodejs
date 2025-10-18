@@ -1,0 +1,24 @@
+:root {
+  --bg: #111;
+  --fg: #eee;
+  --border: #444;
+  --accent: #999;
+  --error: #c33;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+#app { display: flex; flex-direction: row; width: 100vw; height: 100vh; }
+#calendar-panel { padding: 0.5rem; overflow: hidden; }
+#photo-panel { display: flex; align-items: center; justify-content: center; background: #000; position: relative; }
+.photo-landscape { object-fit: contain; max-height: 100%; max-width: 100%; }
+.photo-portrait { object-fit: contain; max-height: 100%; }
+.photo-placeholder { color: var(--accent); font-style: italic; }
+img.photo { max-width: 100%; max-height: 100%; transition: opacity 0.4s ease; }
+.current-day { outline: 2px solid var(--accent); }
+.month-label { font-weight: 600; }
+.event { font-size: 0.7rem; line-height: 1rem; border-left: 2px solid var(--border); padding-left: 0.25rem; margin-bottom: 2px; }
+.event.all-day { border-left-color: var(--accent); }
+.empty { opacity: 0.3; font-style: italic; }
+@media (prefers-color-scheme: light) {
+  :root { --bg:#fdfdfd; --fg:#111; --border:#555; --accent:#222; }
+}

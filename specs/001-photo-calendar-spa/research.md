@@ -103,3 +103,22 @@ All selected choices adhere to Simplicity, Minimal Dependencies (3 core libs), P
 - Whether to implement photo orientation prefetch (fast) vs rely solely on object-fit (start with object-fit only).
 
 End of Phase 0 research.
+
+## Addendum: Merged Confidential Auth Decisions (Post Merge with Feature 002)
+
+| Topic | Decision | Rationale | Alternatives Considered |
+|-------|----------|-----------|--------------------------|
+| Auth Flow Variant | Authorization Code with confidential client & refresh | Aligns with FR-040..FR-056; supports silent refresh and explicit /signin & /callback endpoints | Device Code (less seamless redirect UX), ROPC (security drawbacks) |
+| State Handling | In-memory Map + TTL (5m) single-use | Simple, low concurrency, meets CSRF protection | Persistent store, nonce DB |
+| Refresh Trigger | Remaining lifetime <15% OR ≤10m | Provides buffer before expiry; matches proactive spec language | Fixed interval refresh |
+| Rate Limiting | Token bucket per IP + global fallback (5/min) | Mitigates abuse with minimal complexity | External Redis, leaky bucket only |
+| Token Rotation | Overwrite on refresh when new refresh token returned | Reduces exposure window | Keep previous for rollback (risk of misuse) |
+| Audit Logging | JSON line events (event, ts, level, data) | Machine readable & human friendly | External logging service integration |
+| Scope Enforcement | Exact match to configured scopes | Prevents escalation (FR-053) | Allow superset & prune locally |
+| Sign-Out | Explicit route clearing tokens + session markers | Fulfills FR-047; ensures kiosk privacy | Timed idle expiry only |
+| Revocation Detection | Interpret refresh error codes; clear & force re-auth | Prevents stale unusable token loops | Blind retry until expiry |
+| Secret Handling | File perms (chmod 600) + masked logs; encryption deferred | Simplicity first; can layer later | Immediate local encryption (adds key mgmt need) |
+
+All decisions align with existing constitution (Simplicity, Minimal Dependencies, Pragmatic Testing). No new violations introduced.
+
+End of Auth Addendum.

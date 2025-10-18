@@ -1,11 +1,18 @@
 {
-  "name": "familyboard",
-  "version": "1.0.0",
-  "description": "Home kiosk application",
-  "main": "index.js",
+  "name": "familyboard-nodejs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Family Board Photo & Calendar kiosk SPA",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "start": "node src/server/index.js",
+    "test": "node --test"
   },
   "author": "Kai Walter",
-  "license": "ISC"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "luxon": "^3.4.4",
+    "@azure/msal-node": "^2.6.4"
+  }
 }

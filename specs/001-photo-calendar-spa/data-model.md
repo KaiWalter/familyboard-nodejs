@@ -78,11 +78,41 @@ Aggregates user-configurable + derived settings.
 | Field | Type | Required | Constraints |
 |-------|------|----------|------------|
 | accessToken | string | yes | Non-empty. |
-| refreshToken | string | yes | Non-empty (msal may abstract). |
+| refreshToken | string | yes | Non-empty (if provider issues). |
 | expiresAt | string (ISO8601) | yes | Future timestamp. |
-| scopeHash | string | yes | Hash of scopes to detect mismatch. |
-| lastRefreshAttempt | string (ISO8601) | no | Updated on each attempt. |
+| scopes | string[] | yes | Exact list requested (FR-053). |
+| rotation | number | yes | Increment on each successful refresh (FR-046/055). |
+| lastRefreshAttempt | string (ISO8601) | no | Updated on each attempt (FR-016). |
 | status | 'OK' | 'Refreshing' | 'Warning' | 'Error' | yes | (FR-018). |
+
+### AuthSession
+Represents a pending or active authorization session keyed by state.
+| Field | Type | Required | Constraints / Notes |
+|-------|------|----------|----------------------|
+| state | string | yes | Cryptographically strong; single-use (FR-041). |
+| createdAt | number (epoch ms) | yes | TTL 5m for pending states. |
+| consumedAt | number | no | Set when callback validated. |
+| status | 'pending' | 'exchanged' | 'error' | yes | State machine simple. |
+| errorCode | string | no | Present if status='error'. |
+
+### ClientCredentials
+Configuration for confidential client flow.
+| Field | Type | Required | Notes |
+|-------|------|----------|------|
+| clientId | string | yes | Loaded from config file/env. |
+| clientSecret | string | yes | Never logged raw. |
+| redirectUri | string | yes | Must match provider registration. |
+| scopes | string[] | yes | Stable approved scope list. |
+| rateLimitPerMinute | number | no | Default 5 if omitted (FR-049). |
+
+### AuditEvent
+Structured log entry.
+| Field | Type | Required | Notes |
+|-------|------|----------|------|
+| ts | string (ISO8601) | yes | Event timestamp. |
+| event | string | yes | Namespaced (e.g., auth.signin.initiated). |
+| level | 'info' | 'warn' | 'error' | yes | Severity. |
+| data | object | no | Sanitized payload (no raw secrets). |
 
 ### CachedData
 | Field | Type | Required | Constraints |
@@ -96,6 +126,9 @@ Aggregates user-configurable + derived settings.
 - AppConfig.calendar.calendarIds link to CalendarEvent.sourceCalendarId.
 - PhotoRotationSettings independent; used by photo rotator component.
 - AuthTokenStore consumed by auth scheduler & Graph proxy.
+- AuthSession ephemeral until code exchange; upon success TokenSet/AuthTokenStore updated and session removed.
+- ClientCredentials guides /signin construction and validation of /callback scopes.
+- AuditEvent entries reference state or rotation counters for traceability (not PII).
 - CachedData.events grouped by `displayDateKey` for UI cells; multi-day all-day events produce multiple entries.
 
 ## File Persistence Layout
