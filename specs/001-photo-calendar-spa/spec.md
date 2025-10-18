@@ -44,7 +44,7 @@ events grouped by day. Photos may still be placeholder; story remains useful alo
 9. **Given** an all-day event, **When** the day cell renders, **Then** the event appears at the top with only its title (no time range).
 10. **Given** multiple events including all-day and timed events, **When** the day cell renders, **Then** all-day events appear first (sorted alphabetically by title) followed by timed events sorted by start time.
 11. **Given** a multi-day all-day event spanning several days, **When** the calendar renders, **Then** the event appears once in each affected day cell.
-12. **Given** a multi-day timed event (rare; assumed out of initial scope), **When** displayed, **Then** only the start day shows the time range (assumption documented) unless later clarified.
+12. **Given** a multi-day timed event (rare; assumed out of initial scope), **When** displayed, **Then** only the start day shows the time range (assumption documented); continuation days are not rendered for timed events in MVP.
 13. **Given** the calendar renders, **When** viewing the interface, **Then** visual styling uses a simple black/white (grayscale) palette with sufficient contrast (WCAG AA for text assumed) and no distracting colors.
 14. **Given** today's date is within the displayed range, **When** the calendar renders, **Then** the current day cell shows a clearly visible highlighted border.
 15. **Given** developer needs to tweak styling, **When** inspecting elements, **Then** distinct CSS classes exist for row header, column header, cell header, event, and current-day cell.
@@ -70,10 +70,11 @@ available photos without error; provides standalone value as a slideshow.
 
 ---
 
+and optional golden ratio layout preference (calendar width > photo width). Settings persist between sessions.
 ### User Story 3 - Configure Sources & Display Ratio (Priority: P3)
 
-User can adjust: OneDrive folder path, list of calendar IDs (up to 5), photo rotation interval,
-and optional golden ratio layout preference (calendar width > photo width). Settings persist between sessions.
+User can adjust: OneDrive folder path, list of calendar IDs (up to 5), and optional golden ratio layout preference (calendar width > photo width). Settings persist between sessions.
+Photo rotation interval is fixed at 90 seconds for kiosk simplicity and is NOT user-configurable.
 
 **Why this priority**: Configuration enables personalization; golden ratio preference improves readability.
 
@@ -123,7 +124,7 @@ An operator performs a one-time interactive authentication (e.g., via SSH tunnel
 - **FR-003**: System MUST allow configuration of OneDrive folder path for photo source.
 - **FR-004**: System MUST rotate through available photos at a fixed 90-second cycle (no manual controls).
 - **FR-005**: System MUST provide a layout where calendar pane width is greater than photo pane width using golden ratio (~1.618) when enabled.
-- **FR-006**: System MUST persist configuration (calendar IDs, folder path, interval, ratio enabled) locally.
+- **FR-006**: System MUST persist configuration (calendar IDs, folder path, ratio enabled) locally. (Photo rotation interval is fixed and excluded.)
 - **FR-007**: System MUST gracefully handle empty photo folder by showing a placeholder message.
 - **FR-008**: [Removed – manual controls out of scope per kiosk automation requirement]
 - **FR-009**: System MUST update the 3-week window at midnight without manual refresh.
@@ -189,7 +190,7 @@ No critical ambiguities require clarification beyond reasonable defaults; no NEE
 
 - **SC-001**: Calendar view renders initial 21-day range within 2 seconds on first load (normal connection).
 - **SC-002**: Photo rotation advances automatically at configured interval with ≥95% timing accuracy over 10 minutes.
-- **SC-003**: Users can configure and persist settings (folder, calendars, interval, ratio) in under 1 minute.
+- **SC-003**: Users can configure and persist settings (folder, calendars, ratio) in under 1 minute.
 - **SC-004**: App handles offline or API error scenarios by showing fallback content without crashing 100% of tested cases.
 - **SC-005**: Photo rotation advances precisely every 90s with ≥95% timing accuracy over a 30-minute observation.
 - **SC-006**: Layout ratio accuracy: calendar pane width within ±5% of 1.618× photo pane width when enabled.

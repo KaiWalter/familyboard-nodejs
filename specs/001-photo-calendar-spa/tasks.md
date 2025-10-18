@@ -65,7 +65,7 @@ Independent Test: With photo config, images cycle every 90s; landscape letterbox
 
 - [ ] T027 [US2] Implement `src/services/photoService.js` listing stub (placeholder array)
 - [ ] T028 [P] [US2] Implement `public/js/photoRotator.js` interval rotation logic (90s)
-- [ ] T029 [US2] Add orientation detection & CSS class for landscape/portrait
+- [ ] T029 [US2] Add orientation detection & CSS class for landscape/portrait (fallback: derive after image load natural width/height if metadata absent)
 - [ ] T030 [US2] Add letterboxing neutral background in CSS
 - [ ] T031 [US2] Add placeholder message when no photos
 - [ ] T032 [US2] Integrate with API `/api/photos` route stub (`src/server/routes/photos.js`)
@@ -76,7 +76,8 @@ Independent Test: Change calendar IDs & ratio -> reload shows updated calendar s
 
 - [ ] T033 [US3] Implement ratio calculation utility `src/util/ratio.js`
 - [ ] T034 [P] [US3] Add layout application logic in `public/js/layout.js` adjusting widths
-- [ ] T035 [US3] Implement configuration UI section in `public/index.html` (simple form) + `public/js/configForm.js`
+- [ ] T035 [US3] Implement configuration UI section in `public/index.html` (simple form: folder path, calendar IDs, golden ratio toggle) + `public/js/configForm.js` (rotation interval omitted; fixed at 90s)
+- [ ] T035a [P] [US3] Implement weekday abbreviation override application logic in `public/js/calendarView.js`
 - [ ] T036 [US3] Hook form save to PUT /api/config and reload calendar/photo modules
 - [ ] T037 [US3] Validate calendarIds length and locale/timezone on save using config/store.js
 - [ ] T038 [US3] Add test `tests/unit/ratio.test.mjs` verifying width calculation tolerance
@@ -86,7 +87,8 @@ Goal: One-time auth, persisted tokens, background proactive refresh & status rep
 Independent Test: Start app with stored tokens -> no prompt; near expiry triggers refresh; status endpoint reports transitions.
 
 - [ ] T039 [US4] Implement msal-node setup `src/auth/msalClient.js` (Device Code flow first)
-- [ ] T040 [P] [US4] Implement refresh scheduler `src/auth/refreshScheduler.js` (interval + <15% lifetime trigger)
+- [ ] T040 [P] [US4] Implement refresh scheduler `src/auth/refreshScheduler.js` (interval check + <15% remaining lifetime threshold)
+- [ ] T039a [US4] Implement one-time device code auth helper script `src/auth/authInit.js` (writes tokens.json)
 - [ ] T041 [US4] Integrate token usage in calendarService & photoService (attach Authorization headers)
 - [ ] T042 [US4] Update status route to include remainingMinutes calculation
 - [ ] T043 [US4] Implement backoff logic in refreshScheduler.js (30s, 2m, 4m, etc.) up to 5 attempts
@@ -96,7 +98,9 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
 Final refinements, accessibility, performance, resilience.
 
 - [ ] T045 Optimize calendarService to skip unchanged event days (cache diff)
-- [ ] T046 Add accessibility improvements (aria labels on cells, contrast check CSS audit) in styles.css
+- [ ] T046 Add accessibility improvements (aria labels on cells, verify contrast ≥4.5:1, CSS audit) in styles.css
+- [ ] T046a Add continuation-day visual indicator for multi-day all-day events in `public/js/calendarView.js` (e.g., subtle ellipsis or arrow) 
+- [ ] T046b Implement cached fallback logic in `src/services/calendarService.js` & `src/services/photoService.js` (serve cached JSON on fetch error) 
 - [ ] T047 Add offline detection banner logic `public/js/offlineBanner.js`
 - [ ] T048 Add logging wrapper `src/util/log.js` (still console but structured prefix)
 - [ ] T049 Add DST boundary test `tests/unit/dstBoundary.test.mjs`
@@ -119,7 +123,7 @@ Complete Phase 3 (US1) with placeholder event data and basic styling; deploy kio
 ## Format Validation
 All tasks follow required format: `- [ ] T### [P?] [US?] Description with file path`. Each story phase tasks include story label. Setup/Foundational/Polish phases omit story labels by rule.
 
-Total Tasks: 50
+Total Tasks: 55
 Task Counts:
 - Setup: 8
 - Foundational: 8
@@ -129,6 +133,6 @@ Task Counts:
 - US4: 6
 - Polish: 6
 
-Parallelizable Tasks Marked [P]: 11
+Parallelizable Tasks Marked [P]: 14
 
 End of tasks.
