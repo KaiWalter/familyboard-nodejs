@@ -65,8 +65,8 @@ available photos without error; provides standalone value as a slideshow.
 
 1. **Given** a folder configured with at least 2 images, **When** the app runs, **Then** the photo pane displays each image in rotation at the set interval.
 2. **Given** an empty folder (authenticated), **When** the app runs, **Then** a friendly placeholder message is shown (distinct from unauthenticated sign-in required state; not an error stack).
-3. **Given** a landscape-oriented image wider than the pane, **When** it is displayed, **Then** it is scaled and centered with letterboxing and no overflow.
-4. **Given** a portrait-oriented image taller than it is wide, **When** it is displayed, **Then** it fills height proportionally without cropping and remains fully visible within bounds.
+3. **Given** any image (landscape or portrait), **When** it is displayed, **Then** it fully covers the photo pane area using an aspect-fill strategy (no blank bars), centered both horizontally and vertically, with cropping only along overflow edges (no distortion).
+4. **Given** a high-resolution image larger than pane dimensions, **When** displayed, **Then** browser downscales smoothly (object-fit: cover) without visible pixelation artifacts under typical kiosk viewing distance.
 
 ---
 
@@ -145,11 +145,11 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-010**: System MUST operate without hard failure when network/API errors occur (show fallback state + concise message).
 - **FR-011**: System SHOULD cache last successful calendar data to display if new fetch fails.
 - **FR-012**: System SHOULD skip unsupported/missing images without user disruption.
-- **FR-012a**: System MUST render exactly one image at a time fully contained within the photo pane (no scrollbars, no overflow).
-- **FR-012b**: System MUST center landscape images with preserved aspect ratio (letterboxing where needed).
-- **FR-012c**: System MUST scale portrait images to maximize height while retaining full visibility and aspect ratio.
-- **FR-012d**: System MUST avoid distortion (aspect ratio variance ≤1%).
-- **FR-012e**: System SHOULD show a neutral background color behind letterboxed areas.
+- **FR-012a (Revised)**: System MUST render exactly one image at a time filling (covering) the photo pane with maintained aspect ratio (aspect-fill) and centered both horizontally & vertically.
+- **FR-012b (Revised)**: System MUST allow controlled cropping at the minimal necessary opposing edges (no distortion) instead of letterboxing; no visible pillar/letter bars in normal aspect ratios (≤3:2 or ≥2:3 typical phone photos).
+- **FR-012c (Revised)**: System MUST avoid distortion (aspect ratio variance ≤1%) and use CSS `object-fit: cover` (or equivalent) for scaling.
+- **FR-012d (Revised)**: System SHOULD gracefully handle extreme aspect ratios (panoramas >3:1) by center-cropping without stretching.
+- **FR-012e (Revised)**: System SHOULD retain neutral background only visible during image fade/transition, not as permanent letterbox bars.
 - **FR-012f**: System MUST run in kiosk full-screen mode utilizing entire viewport with no browser chrome/margins and no scrollbars. Favicon MUST be present (branding minimal) per target layout.
 - **FR-013**: System MUST load and use previously stored auth tokens (if present) at startup without interactive prompts.
 - **FR-014**: System MUST persist newly acquired tokens securely on local filesystem after one-time interactive auth.

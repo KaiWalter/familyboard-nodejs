@@ -64,7 +64,7 @@ Notes:
 Additional settings:
 - `photoFolderPath`: Path under user drive root (`Pictures/FamilyBoard`).
 - `goldenRatio`: Boolean to enable calendar:photo width ≈ 1.618:1 pixel ratio.
-- `photoRotationSeconds`: Rotation interval (default 90). Must be >5 to take effect.
+- `photoRotationSeconds`: Rotation interval (default 90). Must be ≥5 to take effect.
 
 Required delegated scopes for full functionality (calendar + photos):
 - `User.Read` (baseline profile)
@@ -217,6 +217,9 @@ The application now accepts opaque access tokens (no dots) to avoid hard failure
 
 ### OneDrive Photo Listing Notes
 `@microsoft.graph.downloadUrl` is a computed property which may be omitted when using an explicit `$select`. The service now avoids `$select` for photo listing and, if any photo items lack a download URL, performs a limited per-item fallback fetch (audit events: `graph.photos.downloadurl.missing`, `graph.photos.downloadurl.fetch_error`). This ensures images with a `photo` facet become displayable even when initial listing omits direct download links.
+
+### Photo Display (Full-Bleed Cover)
+Photos now use `object-fit: cover` to fill the entire left photo pane (no letterboxing). Images are center-cropped when aspect ratios differ; orientation classes remain (`photo-landscape`, `photo-portrait`) for potential future logic. Neutral background is visible only during load/fade.
 
 ### Status Endpoint Polling
 Periodic `GET /status` returns remaining minutes and scopes; use it in monitoring to detect impending expiry and trigger refresh/login workflow.

@@ -40,6 +40,8 @@
 - [ ] Favicon presence requirement noted (FR-012f extension)
 - [ ] Scroll prevention requirement stated (FR-012f + Layout section)
 - [ ] Orientation classes `.portrait` / `.landscape` referenced (Layout section)
+- [ ] Full-bleed (cover) photo scaling requirement (revised FR-012a..012e) documented
+- [ ] Centered crop (no persistent letterboxing) requirement documented
 - [ ] Authentication state distinctions enumerated (Layout section)
 
 ## Notes

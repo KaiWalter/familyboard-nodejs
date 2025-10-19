@@ -40,7 +40,7 @@ function showCurrent(authenticated = true) {
   const img = document.createElement('img');
   img.src = p.url;
   img.alt = p.title || 'photo';
-  img.className = 'photo ' + (p.orientation === 'portrait' ? 'photo-portrait' : 'photo-landscape');
+  img.className = 'photo ' + (p.orientation === 'portrait' ? 'photo-portrait' : 'photo-landscape'); // orientation classes retained for potential future logic; CSS now uses cover
   panel.appendChild(img);
 }
 
@@ -53,7 +53,7 @@ function next() {
 async function loadRotationConfig() {
   try {
     const cfg = await apiGet('/api/config');
-    return (cfg.photoRotationSeconds && cfg.photoRotationSeconds > 5 ? cfg.photoRotationSeconds : 90);
+  return (cfg.photoRotationSeconds && cfg.photoRotationSeconds >= 5 ? cfg.photoRotationSeconds : 90);
   } catch { return 90; }
 }
 
