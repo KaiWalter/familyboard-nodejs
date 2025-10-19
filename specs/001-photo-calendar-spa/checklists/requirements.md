@@ -29,6 +29,19 @@
 - [x] Feature meets measurable outcomes defined in Success Criteria (SC-013..SC-020 included)
 - [x] No implementation details leak into specification
 
+## Layout Specific Verification (target-layout.jpg alignment)
+
+- [ ] Photo panel documented as left; calendar panel as right (FR-005 extension)
+- [ ] Golden ratio tolerance ±5% captured (SC-006 / Layout section)
+- [ ] Immediate first photo display requirement captured (FR-004 extension)
+- [ ] Distinct placeholders: unauthenticated vs empty folder (FR-007 / FR-007a)
+- [ ] Month abbreviation rule for day-of-month=1 cells documented (FR-027)
+- [ ] Offline banner non-reflow behavior noted (Layout section)
+- [ ] Favicon presence requirement noted (FR-012f extension)
+- [ ] Scroll prevention requirement stated (FR-012f + Layout section)
+- [ ] Orientation classes `.portrait` / `.landscape` referenced (Layout section)
+- [ ] Authentication state distinctions enumerated (Layout section)
+
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`

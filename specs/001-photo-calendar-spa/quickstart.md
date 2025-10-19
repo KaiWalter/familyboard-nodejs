@@ -32,7 +32,7 @@ If `.env` not used, export variables directly in shell.
 Create `data/config.json`:
 ```json
 {
-  "oneDriveFolderId": "YOUR_FOLDER_ID",
+  "photoFolderPath": "Pictures/FamilyBoard",
   "calendar": {
     "calendarIds": ["primary"],
     "locale": "en-US",

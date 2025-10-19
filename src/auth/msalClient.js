@@ -33,6 +33,13 @@ export async function deviceCodeLogin(scopes) {
   const result = await msalClient.acquireTokenByDeviceCode({ scopes, deviceCodeCallback: (resp) => {
     console.log('[auth] device code:', resp.message);
   }});
-  writeTokens({ account: result.account, expiresOn: result.expiresOn.getTime(), scopes });
+  // Persist tokens in same schema expected by downstream Graph client
+  writeTokens({
+    account: result.account,
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken || 'no_refresh_token',
+    expiresAt: result.expiresOn.getTime(),
+    scopes: scopes
+  });
   return result;
 }

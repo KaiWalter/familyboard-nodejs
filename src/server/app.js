@@ -9,6 +9,8 @@ import signinRouter from './routes/signin.js';
 import callbackRouter from './routes/callback.js';
 import signoutRouter from './routes/signout.js';
 import authRotateRouter from './routes/authRotate.js';
+import fs from 'fs';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,5 +27,20 @@ app.use('/signin', signinRouter);
 app.use('/callback', callbackRouter);
 app.use('/signout', signoutRouter);
 app.use('/api/auth/rotate', authRotateRouter);
+
+// Serve Luxon as a standalone ES module without exposing entire node_modules
+app.get('/vendor/luxon.js', (req, res) => {
+	try {
+		const luxonPath = path.resolve('node_modules/luxon/build/es6/luxon.mjs');
+		if (!fs.existsSync(luxonPath)) {
+			return res.status(404).type('text/plain').send('luxon not found');
+		}
+		res.setHeader('Cache-Control', 'public, max-age=86400');
+		res.type('application/javascript');
+		fs.createReadStream(luxonPath).pipe(res);
+	} catch (e) {
+		res.status(500).type('text/plain').send('luxon load error');
+	}
+});
 
 export default app;

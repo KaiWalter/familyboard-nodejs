@@ -25,7 +25,9 @@ The application will return `401 not_authenticated` for protected resources unti
 | `src/auth/clientCredentials.js` | (Legacy, unused) prior app-only acquisition module (scheduled for removal) |
 
 ## Configuration
-`data/config.json` (or env overrides) example for delegated scopes:
+All runtime configuration is file-based via `data/config.json` (no in-app configuration panel). On startup the SPA reads this file once and initializes layout (golden ratio, calendar IDs, photo folder path) and begins immediate photo rotation.
+
+`data/config.json` example (delegated scopes + layout + rotation):
 ```jsonc
 {
 	"auth": {
@@ -37,6 +39,17 @@ The application will return `401 not_authenticated` for protected resources unti
 	}
 }
 ```
+Additional settings:
+- `photoFolderPath`: Path under user drive root (`Pictures/FamilyBoard`).
+- `goldenRatio`: Boolean to enable calendar:photo width ≈ 1.618:1 pixel ratio.
+- `photoRotationSeconds`: Rotation interval (default 90). Must be >5 to take effect.
+
+Required delegated scopes for full functionality (calendar + photos):
+- `User.Read` (baseline profile)
+- `Calendars.Read` (fetch events)
+- `Files.Read` (list and download OneDrive images)
+Optionally `offline_access` if refresh tokens are desired. Without `Files.Read` photo fetch will fail with 401.
+
 Environment overrides (not persisted): `AUTH_CLIENT_ID`, `AUTH_CLIENT_SECRET`, `AUTH_TENANT`, `AUTH_REDIRECT_URI`, `AUTH_SCOPES` (comma delimited), `AUTH_RATE_LIMIT` (signin throttling), `AUTH_TEST_MODE` (enables deterministic refresh in tests).
 
 If future requirements demand background (app-only) operations, reintroduce a separate service identity flow; current scope deliberately omits it for clearer user-driven consent.
@@ -76,6 +89,12 @@ Interactive: `auth.signin.initiated`, `auth.signin.authorization_url`, `auth.cal
 Client credential audit events are not expected in interactive-only mode.
 Refresh / Rotation: `auth.refresh.initiated`, `auth.refresh.success`, `auth.rotate.success`, `auth.rotate.error`.
 Security / Errors: `auth.middleware.error`, `auth.signout.cleared`.
+Photos / Graph:
+- `photos.fetch.no_token` – unauthenticated
+- `photos.fetch.invalid_token` – persisted access token not in JWT compact serialization (format error)
+- `photos.fetch.empty_folder` – folder path valid but no image items
+- `graph.retry.backoff` – transient Graph error; exponential backoff applied
+- `graph.retry.giveup` – retries exhausted; fallback to cached data
 
 ## Usage Examples
 Interactive first-time sign-in:
@@ -106,13 +125,83 @@ Run full suite:
 npm test
 ```
 Integration tests cover state validation, scope handling without implicit offline_access injection, manual rotate, signout clearing, and error paths (invalid state, scope issues).
+Unit tests include pagination/retry logic, golden ratio width tolerance, immediate photo display, placeholder distinction (unauthenticated vs empty folder), and month abbreviation rendering.
+
+Troubleshooting token format:
+- If audit shows `photos.fetch.invalid_token` or `graph.retry.giveup` with code 401 and message referencing `IDX14100: JWT is not well formed`, delete `data/tokens.json` and re-run `/signin` ensuring you complete interactive consent. Token must contain three base64url segments separated by two dots.
+
+### Token Health Helper Script
+
+Use `scripts/tokenHealth.mjs` to quickly assess token validity and scope completeness.
+
+Run (human-readable):
+```bash
+node scripts/tokenHealth.mjs
+```
+
+Run (JSON output):
+```bash
+node scripts/tokenHealth.mjs --json
+```
+
+Exit codes:
+- 0: Healthy (well-formed JWT, required scopes present)
+- 2: Invalid / unreadable token (file missing, malformed JWT, decode error)
+- 3: Valid JWT format but missing required scopes
+
+Required scopes checked: `User.Read`, `Calendars.Read`, `Files.Read`.
+
+If missing scopes, sign out then sign in again requesting those scopes.
 
 ## Security Guidelines
 Store secrets in environment or secret manager (avoid committing to repo). Limit delegated scopes to least privilege. Include `offline_access` only if refresh is required. Monitor audit logs for anomalies.
 
 ## Roadmap / Next Steps
-1. Add automated background refresh using refresh token path with configurable threshold.
-2. Expose `tokenType` (currently always `user`) explicitly in status endpoint.
-3. Consider encrypting token file at rest (optional; local dev/demo scope).
-4. Remove legacy client credentials code after confirming it is no longer referenced.
+1. Calendar auto-refresh every 180s (pending FR-018a).
+2. Pagination/throttling for large OneDrive folders.
+3. Expose `tokenType` (currently always `user`) explicitly in status endpoint.
+4. Consider encrypting token file at rest (optional; local dev/demo scope).
+5. Remove legacy client credentials code after confirming it is no longer referenced.
+
+## Automation & Headless Operation
+
+To avoid manual browser sign-in and copying console logs, several automation aids are available:
+
+### Device Code Login
+Use an out-of-band device code flow (no browser automation) to obtain tokens:
+```bash
+node -e "import('./scripts/deviceLogin.mjs').then(m=>m.run(['User.Read','Calendars.Read','Files.Read']))"
+```
+(Helper script to be added: `scripts/deviceLogin.mjs` – prompts with device code message, persists tokens.)
+
+### Audit Log Streaming
+Audit events are appended to `data/audit.log` (override with `AUDIT_FILE`). Tail them live:
+```bash
+node scripts/auditTail.mjs --follow 'photos.*' 'graph.*'
+```
+JSON output:
+```bash
+node scripts/auditTail.mjs --follow --json 'graph.retry.*'
+```
+
+### Token Health CI Check
+Integrate `node scripts/tokenHealth.mjs --json` in CI to fail builds when scopes missing or token malformed (exit codes 2/3).
+
+Opaque vs JWT Tokens:
+If the token health script reports `accessToken not a well-formed JWT (opaque token?)`, ensure you are requesting Microsoft Graph scopes against the v2 endpoint (tenant set correctly). Tokens for Graph should be JWTs with three segments. Re-run interactive or device code login with explicit delegated scopes: `User.Read Calendars.Read Files.Read`.
+
+### Temporary Opaque Token Acceptance
+The application now accepts opaque access tokens (no dots) to avoid hard failures, but emits audit event `graph.token.opaque_format` with the token length. Treat this as a migration hint; switch to v2 delegated scopes so Graph returns a standard JWT. Advantages of JWT: easier diagnostics (can inspect expiry and scopes locally) and consistent validation logic.
+
+### Status Endpoint Polling
+Periodic `GET /status` returns remaining minutes and scopes; use it in monitoring to detect impending expiry and trigger refresh/login workflow.
+
+### Headless Browser Option (Playwright)
+If interactive consent pages must be automated, a future script can launch Chromium with a persistent session and complete login flow once, storing tokens automatically.
+
+### Recommended Flow for Kiosk Boot
+1. Run device code login (or headless script) if no valid token.
+2. Verify with `node scripts/tokenHealth.mjs` (exit 0).
+3. Start server; concurrently tail audit: `node scripts/auditTail.mjs --follow photos.* calendar.*`.
+4. Monitor `/status` for health.
 

@@ -1,12 +1,18 @@
 import { apiGet } from './apiClient.js';
-import { DateTime } from 'luxon';
+// Dynamic luxon import: prefer vendor path in browser, fallback to package in Node test environment.
+let DateTime;
+try {
+  ({ DateTime } = await import('/vendor/luxon.js'));
+} catch {
+  ({ DateTime } = await import('luxon'));
+}
 
-function dayRange21(zone) {
+export function dayRange21(zone) {
   const start = DateTime.now().setZone(zone).startOf('week'); // Monday assumed locale default
   return Array.from({ length: 21 }, (_, i) => start.plus({ days: i }));
 }
 
-function weekdayAbbrev(dt, locale) {
+export function weekdayAbbrev(dt, locale) {
   return dt.setLocale(locale).toFormat('ccc').slice(0, 2); // first two letters
 }
 
@@ -18,7 +24,7 @@ async function loadEvents() {
   return apiGet('/api/events');
 }
 
-function renderGrid(days, cfg) {
+export function renderGrid(days, cfg) {
   const panel = document.getElementById('calendar-panel');
   panel.innerHTML = '';
   const locale = cfg.locale;
@@ -63,7 +69,14 @@ function renderGrid(days, cfg) {
       }
       const head = document.createElement('div');
       head.className = 'cell-header';
-      head.textContent = dt.toFormat('d');
+      // Month abbreviation rules: first Monday cell (days[0]) already handled separately above.
+      // For any cell where day-of-month = 1 include month (e.g., '1 Nov').
+      const dayNum = dt.toFormat('d');
+      if (dt.day === 1) {
+        head.textContent = `${dayNum} ${dt.toFormat('LLL')}`;
+      } else {
+        head.textContent = dayNum;
+      }
       cell.appendChild(head);
       cell.dataset.date = dt.toISODate();
       grid.appendChild(cell);
@@ -72,7 +85,7 @@ function renderGrid(days, cfg) {
   panel.appendChild(grid);
 }
 
-function attachEvents(events, timezone) {
+export function attachEvents(events, timezone) {
   const byDate = new Map();
   for (const ev of events) {
     const date = ev.dayDate ? ev.dayDate : DateTime.fromISO(ev.start).setZone(timezone).toISODate();
@@ -133,8 +146,8 @@ function setupMidnightRollover(cfg) {
   }, 60_000); // check each minute
 }
 
-export async function initCalendar() {
-  const cfg = await loadConfig();
+export async function initCalendar(preloadedCfg) {
+  const cfg = preloadedCfg || await loadConfig();
   const days = dayRange21(cfg.timezone);
   renderGrid(days, cfg);
   const events = await loadEvents();

@@ -15,5 +15,8 @@
     "luxon": "^3.4.4",
     "@azure/msal-node": "^2.6.4",
     "@microsoft/microsoft-graph-client": "^3.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
   }
 }

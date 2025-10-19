@@ -69,7 +69,8 @@ Independent Test: With photo config, images cycle every 90s; landscape letterbox
  - [X] T030 [US2] Add letterboxing neutral background in CSS
  - [X] T031 [US2] Add placeholder message when no photos
  - [X] T032 [US2] Integrate with API `/api/photos` route stub (`src/server/routes/photos.js`)
- - [ ] T032a [US2] Replace photoService & photos route stub with Graph SDK OneDrive folder listing using `@microsoft/microsoft-graph-client`.
+ - [X] T032a [US2] Replace photoService & photos route stub with Graph SDK OneDrive folder listing using `@microsoft/microsoft-graph-client`.
+ - [ ] T032b [US2] Rename config key from oneDriveFolderId to photoFolderPath across spec/data-model/quickstart/openapi and add default in store.js.
 
 ### Phase 5: User Story 3 – Configuration & Ratio (P3)
 Goal: Persist settings, apply golden ratio layout.
@@ -91,9 +92,9 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
  - [X] T040 [P] [US4] Implement refresh scheduler `src/auth/refreshScheduler.js` (interval check + <15% remaining lifetime threshold)
  - [X] T039a [US4] Implement one-time device code auth helper script `src/auth/authInit.js` (writes tokens.json)
  - [X] T041 [US4] Integrate token usage in calendarService & photoService (attach Authorization headers)
-	- [ ] T041a [US4] Implement Graph client wrapper (`src/services/graphClient.js`) providing authenticated Microsoft Graph instance.
+		- [X] T041a [US4] Implement Graph client wrapper (`src/services/graphClient.js`) providing authenticated Microsoft Graph instance.
 	- [ ] T041b [US4] Refactor calendarService to use Graph SDK `client.api('/me/calendars/{id}/calendarView')` (batched or sequential) with selected date range.
-	- [ ] T041c [US4] Refactor photoService to use Graph SDK to list OneDrive folder children and filter image MIME types.
+		- [X] T041c [US4] Refactor photoService to use Graph SDK to list OneDrive folder children and filter image MIME types.
 	- [ ] T041d [US4] Add error mapping & retry/backoff for Graph 429 / 5xx transient errors.
 	- [ ] T041e [US4] Add unit test for graphClient wrapper ensuring single initialization and token injection.
  - [X] T042 [US4] Update status route to include remainingMinutes calculation
@@ -113,6 +114,15 @@ Final refinements, accessibility, performance, resilience.
  - [X] T048 Add logging wrapper `src/util/log.js` (still console but structured prefix)
  - [X] T049 Add DST boundary test `tests/unit/dstBoundary.test.mjs`
  - [X] T050 Document security guidance in README (token file permissions)
+	- [ ] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
+	- [ ] T052 Add test (jsdom or integration) ensuring immediate first photo display before rotation interval elapses
+	- [ ] T053 Distinguish placeholders in photo panel: unauthenticated ("Sign in required") vs empty folder ("No photos found") visual/text test
+	- [ ] T054 Add favicon presence assertion (public/index.html includes link rel="icon")
+	- [ ] T055 Add test ensuring month abbreviation appears on all day-of-month=1 cells within 21-day span
+	- [ ] T056 Add test verifying golden ratio width tolerance ±5% when enabled (reuse ratio.test or extend)
+	- [ ] T057 Add test verifying no vertical/horizontal scrollbars in 1080p viewport simulation (CSS overflow hidden)
+	- [ ] T058 Add test verifying orientation classes applied (.portrait/.landscape) based on metadata width/height
+	- [ ] T059 Add test verifying offline banner does not alter panel width ratio (snapshot before/after offline simulation)
 
 ## Parallel Execution Examples
 - Express routes (events, status) can be implemented concurrently with front-end calendarView rendering using sample data.

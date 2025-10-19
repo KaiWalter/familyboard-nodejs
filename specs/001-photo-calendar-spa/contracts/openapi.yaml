@@ -185,9 +185,9 @@ components:
         continuation: { type: boolean }
     AppConfig:
       type: object
-      required: [oneDriveFolderId, calendar, layout, rotation]
+  required: [photoFolderPath, calendar, layout, rotation]
       properties:
-        oneDriveFolderId: { type: string }
+  photoFolderPath: { type: string }
         calendar:
           type: object
           required: [calendarIds, locale, timezone]

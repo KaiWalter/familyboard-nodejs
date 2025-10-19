@@ -12,6 +12,28 @@ export const info = (msg, meta) => log('INFO', msg, meta);
 export const warn = (msg, meta) => log('WARN', msg, meta);
 export const error = (msg, meta) => log('ERROR', msg, meta);
 
+import fs from 'fs';
+let auditStream = null;
+function getAuditStream() {
+  if (auditStream) return auditStream;
+  try {
+    const filePath = process.env.AUDIT_FILE || 'data/audit.log';
+    auditStream = fs.createWriteStream(filePath, { flags: 'a' });
+  } catch (e) {
+    auditStream = null;
+  }
+  return auditStream;
+}
+
 export function audit(event, details = {}) {
   log('AUDIT', event, details);
+  try {
+    const stream = getAuditStream();
+    if (stream) {
+      const entry = { ts: new Date().toISOString(), event, ...details };
+      stream.write(JSON.stringify(entry) + '\n');
+    }
+  } catch (e) {
+    // swallow file write errors
+  }
 }

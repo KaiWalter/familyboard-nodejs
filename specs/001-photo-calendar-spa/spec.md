@@ -3,7 +3,7 @@
 **Feature Branch**: `001-photo-calendar-spa`  
 **Created**: 2025-10-18  
 **Status**: Draft  
-**Input**: User description: "build an node js javascript spa application, it aims to rotate through a set of photos on the left hand side from a onedrive folder to be configured, on the right hand side a 3 weeks overview from to be configured outlook calendars shall be displayed, the ratio photo pane to calendar pane shall follow the golden rule with more space for calendar"
+**Input**: User description: "build a node js javascript spa application: left side rotates photos from a configured OneDrive folder; right side displays a 3‑week Outlook calendar overview. Layout must match target-layout.jpg (photo panel left, calendar panel right) and apply golden ratio (calendar wider)."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -54,7 +54,7 @@ events grouped by day. Photos may still be placeholder; story remains useful alo
 ### User Story 2 - Rotate Photos from OneDrive Folder (Priority: P2)
 
 User sees left-hand photo pane cycling through images from a configured single OneDrive folder
-at a gentle interval (e.g., every 30 seconds) while calendar stays visible.
+at a fixed kiosk interval (90 seconds) while calendar stays visible (matching target-layout.jpg).
 
 **Why this priority**: Enhances engagement/aesthetic after core scheduling utility; depends only on basic config.
 
@@ -64,7 +64,7 @@ available photos without error; provides standalone value as a slideshow.
 **Acceptance Scenarios**:
 
 1. **Given** a folder configured with at least 2 images, **When** the app runs, **Then** the photo pane displays each image in rotation at the set interval.
-2. **Given** an empty folder, **When** the app runs, **Then** a friendly placeholder message is shown (not an error stack).
+2. **Given** an empty folder (authenticated), **When** the app runs, **Then** a friendly placeholder message is shown (distinct from unauthenticated sign-in required state; not an error stack).
 3. **Given** a landscape-oriented image wider than the pane, **When** it is displayed, **Then** it is scaled and centered with letterboxing and no overflow.
 4. **Given** a portrait-oriented image taller than it is wide, **When** it is displayed, **Then** it fills height proportionally without cropping and remains fully visible within bounds.
 
@@ -73,7 +73,7 @@ available photos without error; provides standalone value as a slideshow.
 and optional golden ratio layout preference (calendar width > photo width). Settings persist between sessions.
 ### User Story 3 - Configure Sources & Display Ratio (Priority: P3)
 
-User can adjust: OneDrive folder path, list of calendar IDs (up to 5), and optional golden ratio layout preference (calendar width > photo width). Settings persist between sessions.
+User can adjust: OneDrive folder path, list of calendar IDs (up to 5), and optional golden ratio layout preference (calendar width > photo width). Settings persist between sessions. (Configuration UI subsequently removed from target layout for kiosk simplification; adjustments now file-based.)
 Photo rotation interval is fixed at 90 seconds for kiosk simplicity and is NOT user-configurable.
 
 **Why this priority**: Configuration enables personalization; golden ratio preference improves readability.
@@ -109,7 +109,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 
 ### Edge Cases
 
-- No network connectivity at load (show offline banner; continue showing last cached photo if any).
+- No network connectivity at load (show offline banner; continue showing last cached photo if any; calendar shows cached events or empty placeholders).
 - Calendar API rate limit encountered (fallback to previously cached events for current day; log concise warning).
 - Photo missing or unsupported format (skip and move to next; record in console).
 - Folder with very large images (display scaled version; do not attempt client-side heavy processing beyond basic CSS sizing).
@@ -133,12 +133,13 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-001**: System MUST display a continuous 21-day calendar range starting at local today.
 - **FR-002**: System MUST fetch and render events from up to 5 configured Outlook calendars.
   - Implementation MUST use the official Microsoft Graph JavaScript SDK (`@microsoft/microsoft-graph-client`) instead of raw HTTP calls for Outlook calendar access.
-- **FR-003**: System MUST allow configuration of OneDrive folder path for photo source.
-  - Implementation MUST use Microsoft Graph JavaScript SDK for accessing OneDrive folder contents (listing images) via `/me/drive` or selected drive item endpoints.
-- **FR-004**: System MUST rotate through available photos at a fixed 90-second cycle (no manual controls).
-- **FR-005**: System MUST provide a layout where calendar pane width is greater than photo pane width using golden ratio (~1.618) when enabled.
+- **FR-003**: System MUST allow configuration of a OneDrive folder path (relative path under the user's root drive, e.g. `Pictures/FamilyBoard`) for photo source.
+  - Implementation MUST use Microsoft Graph JavaScript SDK for accessing OneDrive folder contents via the path-based endpoint `/me/drive/root:/{photoFolderPath}:/children` (ID-based access explicitly out of scope for current version).
+- **FR-004**: System MUST rotate through available photos at a fixed 90-second cycle (no manual controls) starting with immediate display of first available photo (no initial blank state).
+- **FR-005**: System MUST provide a layout where calendar pane width is greater than photo pane width using golden ratio (~1.618) when enabled. Photo panel MUST render left, calendar panel MUST render right (DOM order + flex) matching target-layout.jpg.
 - **FR-006**: System MUST persist configuration (calendar IDs, folder path, ratio enabled) locally. (Photo rotation interval is fixed and excluded.)
-- **FR-007**: System MUST gracefully handle empty photo folder by showing a placeholder message.
+- **FR-007**: System MUST gracefully handle empty photo folder (authenticated) by showing a placeholder message distinct from the unauthenticated "Sign in required" placeholder.
+- **FR-007a**: System MUST display "Sign in required" placeholder in photo panel when unauthenticated (no tokens) instead of generic empty-folder message.
 - **FR-008**: [Removed – manual controls out of scope per kiosk automation requirement]
 - **FR-009**: System MUST update the 3-week window at midnight without manual refresh.
 - **FR-010**: System MUST operate without hard failure when network/API errors occur (show fallback state + concise message).
@@ -149,7 +150,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-012c**: System MUST scale portrait images to maximize height while retaining full visibility and aspect ratio.
 - **FR-012d**: System MUST avoid distortion (aspect ratio variance ≤1%).
 - **FR-012e**: System SHOULD show a neutral background color behind letterboxed areas.
-- **FR-012f**: System MUST run in kiosk full-screen mode utilizing entire viewport with no browser chrome/margins and no scrollbars.
+- **FR-012f**: System MUST run in kiosk full-screen mode utilizing entire viewport with no browser chrome/margins and no scrollbars. Favicon MUST be present (branding minimal) per target layout.
 - **FR-013**: System MUST load and use previously stored auth tokens (if present) at startup without interactive prompts.
 - **FR-014**: System MUST persist newly acquired tokens securely on local filesystem after one-time interactive auth.
 - **FR-015**: System MUST refresh tokens proactively before expiry (target: refresh when remaining lifetime <15%).
@@ -165,7 +166,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-024**: System MUST support at least locales "en-US" and "de-DE" for weekday abbreviations.
 - **FR-025**: System SHOULD correctly handle year boundary transitions (e.g., week 52/53 to week 1) without mislabeling.
 - **FR-026**: System SHOULD allow override of weekday abbreviations via configuration.
-- **FR-027**: System MUST include localized 3-letter month abbreviation in the header of the first Monday cell and any cell where day-of-month = 1 within the displayed range.
+- **FR-027**: System MUST include localized 3-letter month abbreviation in the header of the first Monday cell and any cell where day-of-month = 1 within the displayed range (visual boundary indicator between months as seen in target layout).
 - **FR-028**: System MUST allow configuration of a timezone identifier (IANA string) used for event time display.
 - **FR-029**: System MUST convert all fetched UTC event timestamps to the configured timezone for display purposes.
 - **FR-030**: System MUST format timed events as "H:MM - H:MM Title" using 24-hour clock respecting locale for month/day names (assumption: 24h format acceptable in target locales).
@@ -201,6 +202,19 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-056**: System MUST enable protected data fetch logic to distinguish authenticated vs unauthenticated requests reliably after sign-in or sign-out actions.
 
 No critical ambiguities require clarification beyond reasonable defaults; no NEEDS CLARIFICATION markers added.
+
+### Layout Specific Requirements (Derived from Target Layout)
+
+- Panels: Two primary panels; left = Photos, right = Calendar. No configuration form visible in kiosk mode.
+- Ratio: When golden ratio enabled, computed widths maintain calendar/photo ≈1.618 within ±5% tolerance (SC-006). If disabled, panels share available width 50/50.
+- Initial Photo: First photo (or placeholder) MUST display immediately on load before first rotation interval elapses.
+- Orientation Classes: Photo element MUST apply `.portrait` or `.landscape` class for CSS scaling; letterboxing background neutral gray (#111–#222 range) for landscape.
+- Offline Banner: MUST appear at top or overlay when navigator.offLine detected; does NOT reflow panel ratio.
+- Authentication State: Photo panel distinguishes three states: unauthenticated (Sign in required), authenticated empty folder (No photos found), authenticated with photos (rotating slideshow).
+- Calendar Month Indicators: Month abbreviation appears inline with each day header where day-of-month=1 plus first Monday cell.
+- Current Day Highlight: Border thickness difference (≥2px) with monochrome contrast.
+- Scroll Behavior: Entire body and panels MUST prevent scrollbars under typical viewport sizes (1080p reference); overflow hidden.
+- Favicon: Minimal SVG favicon present to prevent default browser blank icon and match kiosk polish.
 
 ### Key Entities *(include if feature involves data)*
 

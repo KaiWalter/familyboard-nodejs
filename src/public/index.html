@@ -5,36 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Family Board</title>
   <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
 </head>
 <body>
   <main id="app">
-    <section id="calendar-panel" aria-label="21 day calendar"></section>
-    <section id="photo-panel" aria-label="rotating photos"><div class="photo-placeholder">Loading photos...</div></section>
-    <aside id="config-panel" aria-label="configuration" style="position:absolute; top:0; right:0; background:rgba(0,0,0,0.6); padding:0.5rem; font-size:0.7rem;">
-      <form id="config-form">
-        <div><label>Timezone <input name="timezone" /></label></div>
-        <div><label>Locale <input name="locale" /></label></div>
-        <div><label>Calendar IDs (comma) <input name="calendarIds" /></label></div>
-        <div><label>Golden Ratio <input type="checkbox" name="goldenRatio" checked /></label></div>
-        <div><label>Weekday Override (Mon=Mo,...) <input name="weekdayOverride" placeholder="1=Mo,2=Tu" /></label></div>
-        <button type="submit">Save</button>
-      </form>
-    </aside>
+  <section id="photo-panel" aria-label="rotating photos"><div class="photo-placeholder">Loading photos...</div></section>
+  <section id="calendar-panel" aria-label="21 day calendar"></section>
   </main>
   <script type="module" src="./js/apiClient.js"></script>
-  <script type="module">
-    import { initCalendar } from './js/calendarView.js';
-    import { initPhotoRotation } from './js/photoRotator.js';
-    import { initConfigForm } from './js/configForm.js';
-    import { initResponsive } from './js/layout.js';
-    import { initOfflineBanner } from './js/offlineBanner.js';
-    import { initAuthIndicator } from './js/authIndicator.js';
-    initCalendar();
-    initPhotoRotation();
-    initConfigForm();
-    initOfflineBanner();
-    initAuthIndicator();
-  </script>
+  <script type="module" src="./js/initApp.js"></script>
   <!-- calendarView bootstraps the 21-day grid; photo rotator added later -->
 </body>
 </html>

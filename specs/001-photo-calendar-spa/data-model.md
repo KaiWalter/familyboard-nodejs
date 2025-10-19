@@ -69,7 +69,7 @@ Validation:
 Aggregates user-configurable + derived settings.
 | Field | Type | Required | Constraints |
 |-------|------|----------|------------|
-| oneDriveFolderId | string | yes | Non-empty (FR-003). |
+| photoFolderPath | string | yes | Non-empty path segment under root (FR-003). |
 | calendar | CalendarConfig | yes | Validated. |
 | layout | LayoutSettings | yes | Validated. |
 | rotation | PhotoRotationSettings | yes | interval fixed 90. |
@@ -208,9 +208,9 @@ AppConfig (excerpt):
 {
   "$id": "AppConfig",
   "type": "object",
-  "required": ["oneDriveFolderId", "calendar", "layout", "rotation"],
+  "required": ["photoFolderPath", "calendar", "layout", "rotation"],
   "properties": {
-    "oneDriveFolderId": {"type": "string", "minLength": 1},
+  "photoFolderPath": {"type": "string", "minLength": 1},
     "calendar": {"$ref": "CalendarConfig"},
     "layout": {"type": "object", "required": ["goldenRatioEnabled", "ratio"], "properties": {"goldenRatioEnabled": {"type": "boolean"}, "ratio": {"type": "number", "minimum": 1.568, "maximum": 1.668}}},
     "rotation": {"type": "object", "required": ["intervalSeconds"], "properties": {"intervalSeconds": {"type": "number", "const": 90}, "lastIndex": {"type": "number", "minimum": 0}}}

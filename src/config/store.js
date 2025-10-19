@@ -9,7 +9,9 @@ const defaults = {
   locale: 'en-US',
   timezone: 'UTC',
   weekdayAbbrevOverride: {},
+  photoFolderPath: '',
   goldenRatio: true,
+  photoRotationSeconds: 90,
   auth: {
     clientId: '',
     clientSecret: '',
