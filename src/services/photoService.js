@@ -5,7 +5,8 @@ import { audit } from '../util/log.js';
 
 export async function fetchPhotos() {
   const cached = getCache('photos');
-  if (cached?.data) return cached.data;
+  // Only reuse cache if it has non-empty data; empty array should not block re-fetch after auth or folder population
+  if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
   const cfg = loadConfig();
   const folder = cfg.photoFolderPath || '';
   if (!folder) {
@@ -15,7 +16,8 @@ export async function fetchPhotos() {
   }
   try {
     const items = await fetchPhotoItems(folder);
-    setCache('photos', items);
+    // Only cache non-empty results; allow future attempts if currently empty
+    if (items.length > 0) setCache('photos', items);
     return items;
   } catch (e) {
     audit('photos.fetch.error', { folder, message: e.message });

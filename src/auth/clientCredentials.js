@@ -5,7 +5,7 @@
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { loadConfig } from '../config/store.js';
 import { audit } from '../util/log.js';
-import { writeTokens, readTokens } from './tokenStore.js';
+// tokenStore removed; rely solely on MSAL cache
 
 let _cca; // singleton MSAL ConfidentialClientApplication
 let _cached; // { accessToken, expiresAt, scopes }
@@ -40,12 +40,7 @@ export async function acquireAppToken(scopesOverride) {
   if (isValid(_cached)) return _cached;
 
   // Attempt to use persisted tokens if present (in case of process restart)
-  const persisted = readTokens();
-  if (isValid(persisted)) {
-    _cached = persisted;
-    audit('auth.client_credentials.cache_hit_persisted', { expiresAt: _cached.expiresAt });
-    return _cached;
-  }
+  // No legacy persisted token reuse; must re-acquire
 
   const cca = getClient();
   audit('auth.client_credentials.request', { scopes });
@@ -55,7 +50,6 @@ export async function acquireAppToken(scopesOverride) {
     const expiresAt = result.expiresOn instanceof Date ? result.expiresOn.getTime() : Date.now() + 3500_000;
     _cached = { accessToken: result.accessToken, expiresAt, scopes: scopes.slice(), provider: 'msal' };
     // Persist minimal set for diagnostics (no refresh token in client credentials flow)
-    writeTokens(_cached);
     audit('auth.client_credentials.acquired', { expiresAt });
     return _cached;
   } catch (e) {

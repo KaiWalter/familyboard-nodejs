@@ -3,6 +3,14 @@ import { apiGet } from './apiClient.js';
 let photos = [];
 let idx = 0;
 let intervalId;
+let retryTimerId;
+
+// Configurable retry parameters (exported for tests via underscored getters)
+const RETRY_SCHEDULE_MS = [1000, 2000, 4000, 8000, 16000]; // stop after ~31s
+let retryAttempts = 0;
+
+export function _getRetryAttempts() { return retryAttempts; }
+export function _clearRetryTimer() { if (retryTimerId) clearTimeout(retryTimerId); retryTimerId = undefined; }
 
 async function loadPhotos() {
   try {
@@ -62,6 +70,7 @@ export async function initPhotoRotation() {
   await loadPhotos();
   idx = 0;
   showCurrent(authed);
+  if (authed && photos.length === 0) scheduleRetry();
   const seconds = await loadRotationConfig();
   if (intervalId) clearInterval(intervalId);
   intervalId = setInterval(async () => {
@@ -78,4 +87,26 @@ export async function initPhotoPanelImmediate() {
   await loadPhotos();
   idx = 0;
   showCurrent(authed);
+  if (authed && photos.length === 0) scheduleRetry();
+}
+
+async function retryFetch() {
+  const authed = await isAuthenticated();
+  if (!authed) return; // stop retrying if user signed out
+  await loadPhotos();
+  if (photos.length > 0) {
+    showCurrent(true);
+    retryAttempts++; // count final success attempt
+    _clearRetryTimer();
+    return;
+  }
+  retryAttempts++;
+  scheduleRetry();
+}
+
+function scheduleRetry() {
+  if (retryAttempts >= RETRY_SCHEDULE_MS.length) return; // exhausted
+  const delay = RETRY_SCHEDULE_MS[retryAttempts];
+  _clearRetryTimer();
+  retryTimerId = setTimeout(retryFetch, delay);
 }

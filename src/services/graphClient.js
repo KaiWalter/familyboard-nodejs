@@ -3,7 +3,7 @@
 // NOTE: Token acquisition handled elsewhere (interactive auth). This wrapper injects token per request.
 
 import { Client } from '@microsoft/microsoft-graph-client';
-import { readTokens } from '../auth/tokenStore.js';
+import { getAccessToken as getMsalAccessToken } from '../auth/msalToken.js';
 import { audit } from '../util/log.js';
 
 let _client;
@@ -16,15 +16,16 @@ export function classifyAccessToken(token) {
   return { type: 'opaque' };
 }
 
-function getAccessToken() {
-  const tokens = readTokens();
-  if (!tokens || !tokens.accessToken) throw new Error('no_access_token');
-  const { type } = classifyAccessToken(tokens.accessToken);
-  if (type === 'opaque') {
-    // Accept opaque token but emit audit so operator can migrate to v2 JWT issuance.
-    audit('graph.token.opaque_format', { length: tokens.accessToken.length });
+async function getAccessToken() {
+  try {
+    const token = await getMsalAccessToken();
+    const { type } = classifyAccessToken(token);
+    if (type === 'opaque') audit('graph.token.opaque_format', { length: token.length });
+    return token;
+  } catch (e) {
+    audit('graph.token.acquire_failed', { message: e.message });
+    throw e;
   }
-  return tokens.accessToken;
 }
 
 export function getGraphClient() {
@@ -32,7 +33,7 @@ export function getGraphClient() {
   _client = Client.init({
     authProvider: async (done) => {
       try {
-        const token = getAccessToken();
+        const token = await getAccessToken();
         return done(null, token);
       } catch (e) {
         return done(e, null);

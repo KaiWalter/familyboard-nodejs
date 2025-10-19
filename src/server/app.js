@@ -9,6 +9,7 @@ import signinRouter from './routes/signin.js';
 import callbackRouter from './routes/callback.js';
 import signoutRouter from './routes/signout.js';
 import authRotateRouter from './routes/authRotate.js';
+import debugAuthRouter from './routes/debugAuth.js';
 import fs from 'fs';
 
 
@@ -27,6 +28,7 @@ app.use('/signin', signinRouter);
 app.use('/callback', callbackRouter);
 app.use('/signout', signoutRouter);
 app.use('/api/auth/rotate', authRotateRouter);
+app.use('/api/debug/auth', debugAuthRouter);
 
 // Serve Luxon as a standalone ES module without exposing entire node_modules
 app.get('/vendor/luxon.js', (req, res) => {

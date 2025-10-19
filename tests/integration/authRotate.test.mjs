@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
 import app from '../../src/server/app.js';
-import { writeTokens, clearTokens, readTokens, setTokenPath } from '../../src/auth/tokenStore.js';
+// tokenStore removed; rely on MSAL accounts and TEST_MODE
 
 function startServer() {
   return new Promise(resolve => {
@@ -11,10 +11,8 @@ function startServer() {
   });
 }
 
-test('manual rotate fails with 400 when no tokens', async () => {
+test('manual rotate fails with 400 when no accounts', async () => {
   process.env.NODE_ENV = 'test';
-  clearTokens();
-  setTokenPath('data/tokens_rotate_none.json');
   const { server, port } = await startServer();
   try {
     const res = await fetch(`http://localhost:${port}/api/auth/rotate`, { method: 'POST' });
@@ -24,20 +22,29 @@ test('manual rotate fails with 400 when no tokens', async () => {
   } finally { server.close(); }
 });
 
-test('manual rotate succeeds and extends expiry', async () => {
+import { PublicClientApplication } from '@azure/msal-node';
+test('manual rotate succeeds under TEST_MODE', async () => {
   process.env.NODE_ENV = 'test';
-  // Provide mock tokens; TEST_MODE path will extend expiry
-  setTokenPath('data/tokens_rotate_active.json');
-  const startExp = Date.now() + 2 * 60_000;
-  writeTokens({ tokenType: 'user', account: { homeAccountId: 'x' }, expiresAt: startExp, scopes: ['User.Read','offline_access'], refreshToken: 'r' });
   process.env.AUTH_TEST_MODE = '1';
+  process.env.AUTH_CLIENT_ID = 'client';
+  process.env.AUTH_CLIENT_SECRET = 'secret';
+  process.env.AUTH_REDIRECT_URI = 'http://localhost/callback';
+  process.env.AUTH_SCOPES = 'User.Read';
+  const originalAcquire = PublicClientApplication.prototype.acquireTokenByCode;
+  // Patch the PublicClientApplication used by msalClient to simulate successful code exchange
+  PublicClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'rotate_access', refreshToken: 'rotate_refresh', expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
   const { server, port } = await startServer();
   try {
-    const res = await fetch(`http://localhost:${port}/api/auth/rotate`, { method: 'POST' });
-    assert.equal(res.status, 200);
-    const body = await res.json();
+    const signinRes = await fetch(`http://localhost:${port}/signin`);
+    const { state } = await signinRes.json();
+    const resCb = await fetch(`http://localhost:${port}/callback?code=rotatetest&state=${state}`, { redirect: 'manual' });
+    assert.ok([200,302].includes(resCb.status));
+    const rotateRes = await fetch(`http://localhost:${port}/api/auth/rotate`, { method: 'POST' });
+    assert.equal(rotateRes.status, 200);
+    const body = await rotateRes.json();
     assert.ok(body.success);
-    const updated = readTokens();
-    assert.ok(updated.expiresAt > startExp, 'expiry extended');
-  } finally { server.close(); }
+  } finally {
+    PublicClientApplication.prototype.acquireTokenByCode = originalAcquire;
+    server.close();
+  }
 });

@@ -64,7 +64,8 @@ router.get('/', (req, res) => {
     params.set('prompt', 'consent');
     audit('auth.signin.force_consent', { state });
   }
-  const tenant = process.env.AUTH_TENANT || cfg.auth.tenant || process.env.MSAL_TENANT_ID || 'consumers';
+  // Use same tenant resolution logic as msalClient to avoid code/authority mismatch
+  const tenant = process.env.AUTH_TENANT || cfg.auth.tenant || process.env.MSAL_TENANT_ID || 'common';
   const authorizationUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params.toString()}`;
   const wantsJson = (req.query.format === 'json') || /application\/json/.test(req.headers.accept || '');
   const ua = req.headers['user-agent'] || '';

@@ -1,5 +1,6 @@
-import { acquireTokenSilent } from './msalClient.js';
-import { readTokens, writeTokens, updateStatus, clearTokens } from './tokenStore.js';
+import { acquireTokenSilent, loadMsalClient } from './msalClient.js';
+import { getTokenMetadata, __setExpiryForTests } from './msalToken.js';
+import { setCache } from '../services/cache.js';
 import { audit } from '../util/log.js';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { loadConfig } from '../config/store.js';
@@ -9,8 +10,8 @@ let cancelled = false; // set true on signout to suppress writes
 const CHECK_INTERVAL_MS = 60_000; // 1 min
 const BACKOFFS = [30_000, 120_000, 240_000, 480_000, 960_000];
 
-function remainingLifetimeMs(tokens) {
-  const exp = tokens?.expiresAt || tokens?.expiresOn;
+function remainingLifetimeMs(meta) {
+  const exp = meta?.expiresAt;
   if (!exp) return 0;
   return exp - Date.now();
 }
@@ -20,18 +21,47 @@ function remainingLifetimeMs(tokens) {
 // 2. Else attempt silent (legacy public client path)
 async function performRefresh(scopes, acquireFn) {
   const cfg = loadConfig();
-  const tokens = readTokens();
-  if (!tokens) return null;
+  const meta = await getTokenMetadata(scopes);
+  if (!meta || meta.status !== 'OK') return null;
   // Test mode shortcut: just extend expiry
   if (process.env.AUTH_TEST_MODE === '1') {
-    return { account: tokens.account || { homeAccountId: 'test' }, expiresOn: new Date(Date.now() + 55 * 60_000), accessToken: 'mock_refreshed', refreshToken: tokens.refreshToken };
+    const newExpiry = Date.now() + 55 * 60_000;
+    // Update test override so subsequent metadata fetch reflects extended expiry
+    try { __setExpiryForTests(newExpiry); } catch {}
+    return { account: { homeAccountId: meta.account?.homeAccountId || 'test' }, expiresOn: new Date(newExpiry), accessToken: 'mock_refreshed' };
   }
-  if (tokens.refreshToken && cfg.auth?.clientId && cfg.auth?.clientSecret) {
+  // If a custom acquire function was injected (e.g., tests) use it directly to avoid real network
+  if (acquireFn && acquireFn !== acquireTokenSilent) {
+    try {
+      return await acquireFn(scopes);
+    } catch (e) {
+      throw e;
+    }
+  }
+  // Attempt silent first (MSAL handles refresh internally)
+  try {
+    const client = loadMsalClient();
+    const accounts = await client.getTokenCache().getAllAccounts();
+    if (accounts && accounts.length) {
+      const account = accounts[0];
+      const result = await client.acquireTokenSilent({ account, scopes });
+      return result;
+    }
+  } catch (e) {
+    // fall through to confidential refresh if configured
+  }
+  if (cfg.auth?.clientId && cfg.auth?.clientSecret) {
     try {
   const tenant = process.env.AUTH_TENANT || cfg.auth?.tenant || process.env.MSAL_TENANT_ID || 'common';
       const authority = `https://login.microsoftonline.com/${tenant}`;
       const cca = new ConfidentialClientApplication({ auth: { clientId: cfg.auth.clientId, clientSecret: cfg.auth.clientSecret, authority } });
-      const result = await cca.acquireTokenByRefreshToken({ refreshToken: tokens.refreshToken, scopes });
+      // Without explicit refresh token, attempt acquireTokenByClientCredential if scopes are app-only, else bail
+      let result;
+      try {
+        result = await cca.acquireTokenByClientCredential({ scopes });
+      } catch (clientCredErr) {
+        throw clientCredErr;
+      }
       return result;
     } catch (e) {
       throw e;
@@ -44,15 +74,16 @@ async function performRefresh(scopes, acquireFn) {
 
 // One-shot manual refresh (no scheduler/backoff). Returns { updated: boolean, error?: string }
 export async function performSingleRefresh(scopes, acquireFn = acquireTokenSilent) {
-  const tokens = readTokens();
-  if (!tokens) return { updated: false, error: 'no_tokens' };
+  const meta = await getTokenMetadata(scopes);
+  if (!meta || meta.status !== 'OK') return { updated: false, error: 'no_tokens' };
   try {
     const res = await performRefresh(scopes, acquireFn);
-    if (!res || !res.expiresOn) return { updated: false, error: 'refresh_failed' };
+    if (!res || !res.expiresOn || !res.accessToken) return { updated: false, error: 'refresh_failed' };
     if (cancelled) return { updated: false, error: 'cancelled' };
-    writeTokens({ account: res.account, expiresAt: res.expiresOn.getTime(), scopes, refreshToken: res.refreshToken || tokens.refreshToken });
-    audit('auth.refresh.manual_success', { newExpiry: res.expiresOn.getTime() });
-    updateStatus('OK');
+    // Invalidate cached protected-resource data if token changed; we cannot compare old token now (no file persistence), assume change.
+    try { setCache('photos', null); } catch {}
+    try { setCache('events', null); } catch {}
+  audit('auth.refresh.manual_success', { newExpiry: res.expiresOn.getTime() });
     return { updated: true };
   } catch (e) {
     audit('auth.refresh.manual_failed', { message: e.message });
@@ -65,29 +96,26 @@ export function startRefreshScheduler(scopes, acquireFn = acquireTokenSilent, ch
   cancelled = false;
   let attempt = 0;
   intervalId = setInterval(async () => {
-    const tokens = readTokens();
-    if (!tokens) return;
-    const remaining = remainingLifetimeMs(tokens);
-    const assumedLifetime = 3600_000; // 1h
-    const threshold = assumedLifetime * 0.15; // 15%
-    if (remaining < threshold) {
-      updateStatus('Refreshing');
+  const meta = await getTokenMetadata(scopes);
+  if (!meta || meta.status !== 'OK') return;
+  const remaining = remainingLifetimeMs(meta);
+    // Refresh when <10 minutes remaining OR already expired
+    if (remaining < 10 * 60_000) {
       audit('auth.refresh.initiated', { remainingMs: remaining });
       try {
         const res = await performRefresh(scopes, acquireFn);
-        if (!res || !res.expiresOn) throw new Error('refresh_failed');
+        if (!res || !res.expiresOn || !res.accessToken) throw new Error('refresh_failed');
         if (cancelled) return; // signout occurred
-        writeTokens({ account: res.account, expiresAt: res.expiresOn.getTime(), scopes, refreshToken: res.refreshToken || tokens.refreshToken });
+        try { setCache('photos', null); } catch {}
+        try { setCache('events', null); } catch {}
         attempt = 0;
-        audit('auth.refresh.success', { newExpiry: res.expiresOn.getTime() });
-        updateStatus('OK');
+  audit('auth.refresh.success', { newExpiry: res.expiresOn.getTime() });
       } catch (e) {
         audit('auth.refresh.failed', { attempt, message: e.message });
         const isRevoked = /invalid_grant|interaction_required|AADSTS/.test(e.message || '');
         if (isRevoked) {
           audit('auth.refresh.revoked', {});
-          clearTokens();
-          updateStatus('Warning');
+          // signout will clear cache; nothing done here
           return;
         }
         if (attempt < BACKOFFS.length) {
@@ -96,21 +124,21 @@ export function startRefreshScheduler(scopes, acquireFn = acquireTokenSilent, ch
           setTimeout(async () => {
             try {
               const retry = await performRefresh(scopes, acquireFn);
-              if (!retry || !retry.expiresOn) throw new Error('retry_failed');
+              if (!retry || !retry.expiresOn || !retry.accessToken) throw new Error('retry_failed');
               if (cancelled) return;
-              writeTokens({ account: retry.account, expiresAt: retry.expiresOn.getTime(), scopes, refreshToken: retry.refreshToken || tokens.refreshToken });
+              try { setCache('photos', null); } catch {}
+              try { setCache('events', null); } catch {}
               attempt = 0;
               audit('auth.refresh.backoff_success', { newExpiry: retry.expiresOn.getTime() });
-              updateStatus('OK');
             } catch (err2) {
               audit('auth.refresh.backoff_failed', { message: err2.message, attempt });
               if (attempt >= BACKOFFS.length) {
-                updateStatus('Warning');
+                // terminal backoff state logged only
               }
             }
           }, delay);
         } else {
-          updateStatus('Warning');
+          // terminal failure logged only
         }
       }
     }

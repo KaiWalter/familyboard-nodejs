@@ -216,6 +216,25 @@ No critical ambiguities require clarification beyond reasonable defaults; no NEE
 - Scroll Behavior: Entire body and panels MUST prevent scrollbars under typical viewport sizes (1080p reference); overflow hidden.
 - Favicon: Minimal SVG favicon present to prevent default browser blank icon and match kiosk polish.
 
+#### Layout Verification Mapping
+
+The following explicit mapping enumerates each layout verification item (previously unchecked in `checklists/requirements.md`) to its authoritative requirement reference so the checklist can be marked complete with traceability:
+
+1. Photo panel left; calendar panel right → FR-005 ("Photo panel MUST render left, calendar panel MUST render right").
+2. Golden ratio tolerance ±5% → Ratio bullet above + SC-006 (width within ±5%).
+3. Immediate first photo display → FR-004 ("immediate display of first available photo").
+4. Distinct placeholders (unauth vs empty) → FR-007 and FR-007a.
+5. Month abbreviation for day-of-month = 1 cells (and first Monday) → FR-027.
+6. Offline banner non-reflow behavior → Offline Banner bullet (Layout Specific Requirements) + implicit kiosk stability in FR-012f.
+7. Favicon presence requirement → FR-012f (explicit mention of favicon) and Favicon bullet.
+8. Scroll prevention (no scrollbars) → FR-012f ("no scrollbars") + Scroll Behavior bullet.
+9. Orientation classes `.portrait` / `.landscape` → Orientation Classes bullet (Layout Specific Requirements) supporting revised FR-012a–FR-012e implementation.
+10. Full-bleed (cover) photo scaling → Revised FR-012a through FR-012e (aspect-fill, cropping rules, extreme ratios, neutral background).
+11. Centered crop (no persistent letterboxing) → Revised FR-012a (centered) & FR-012b/FR-012e (no letterboxing except transient during transitions).
+12. Authentication state distinctions (unauthenticated vs empty vs rotating) → Authentication State bullet + FR-007 / FR-007a.
+
+No additional specification text required beyond these cross-references; this subsection exists solely to allow checklist closure with transparent traceability.
+
 ### Key Entities *(include if feature involves data)*
 
 - **CalendarEvent**: Represents a single event (id, title, startDateTime, endDateTime, allDay flag, sourceCalendarId) plus derived localized displayStart/displayEnd; continuation flag for multi-day all-day events.

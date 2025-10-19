@@ -31,18 +31,18 @@
 
 ## Layout Specific Verification (target-layout.jpg alignment)
 
-- [ ] Photo panel documented as left; calendar panel as right (FR-005 extension)
-- [ ] Golden ratio tolerance ±5% captured (SC-006 / Layout section)
-- [ ] Immediate first photo display requirement captured (FR-004 extension)
-- [ ] Distinct placeholders: unauthenticated vs empty folder (FR-007 / FR-007a)
-- [ ] Month abbreviation rule for day-of-month=1 cells documented (FR-027)
-- [ ] Offline banner non-reflow behavior noted (Layout section)
-- [ ] Favicon presence requirement noted (FR-012f extension)
-- [ ] Scroll prevention requirement stated (FR-012f + Layout section)
-- [ ] Orientation classes `.portrait` / `.landscape` referenced (Layout section)
-- [ ] Full-bleed (cover) photo scaling requirement (revised FR-012a..012e) documented
-- [ ] Centered crop (no persistent letterboxing) requirement documented
-- [ ] Authentication state distinctions enumerated (Layout section)
+- [x] Photo panel documented as left; calendar panel as right (FR-005 extension)
+- [x] Golden ratio tolerance ±5% captured (SC-006 / Layout section)
+- [x] Immediate first photo display requirement captured (FR-004 extension)
+- [x] Distinct placeholders: unauthenticated vs empty folder (FR-007 / FR-007a)
+- [x] Month abbreviation rule for day-of-month=1 cells documented (FR-027)
+- [x] Offline banner non-reflow behavior noted (Layout section)
+- [x] Favicon presence requirement noted (FR-012f extension)
+- [x] Scroll prevention requirement stated (FR-012f + Layout section)
+- [x] Orientation classes `.portrait` / `.landscape` referenced (Layout section)
+- [x] Full-bleed (cover) photo scaling requirement (revised FR-012a..012e) documented
+- [x] Centered crop (no persistent letterboxing) requirement documented
+- [x] Authentication state distinctions enumerated (Layout section)
 
 ## Notes
 

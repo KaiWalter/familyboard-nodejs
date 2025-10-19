@@ -8,8 +8,8 @@ try {
 }
 
 export function dayRange21(zone) {
-  const start = DateTime.now().setZone(zone).startOf('week'); // Monday assumed locale default
-  return Array.from({ length: 21 }, (_, i) => start.plus({ days: i }));
+  const anchorMonday = DateTime.now().setZone(zone).startOf('week'); // Monday anchor per spec FR-023
+  return Array.from({ length: 21 }, (_, i) => anchorMonday.plus({ days: i }));
 }
 
 export function weekdayAbbrev(dt, locale) {
@@ -30,20 +30,20 @@ export function renderGrid(days, cfg) {
   const locale = cfg.locale;
   const override = cfg.weekdayAbbrevOverride || {};
 
-  // Month labels logic
-  const firstMonday = days[0];
-  const monthLabelDiv = document.createElement('div');
-  monthLabelDiv.className = 'month-label';
-  monthLabelDiv.textContent = firstMonday.toFormat('LLL');
-  panel.appendChild(monthLabelDiv);
-
   const grid = document.createElement('div');
+  grid.className = 'calendar-grid';
   grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+  // Add an extra first column for week numbers (row headers): 1 narrow + 7 day columns
+  grid.style.gridTemplateColumns = 'minmax(2.2rem, 2.5rem) repeat(7, 1fr)';
   grid.style.gridAutoRows = '1fr';
   grid.style.gap = '4px';
 
-  // headers
+  // Top-left corner (blank cell placeholder for column of week numbers)
+  const corner = document.createElement('div');
+  corner.className = 'corner-header';
+  grid.appendChild(corner);
+
+  // Weekday column headers
   for (let w = 0; w < 7; w++) {
     const h = document.createElement('div');
     const dt = days[w];
@@ -55,8 +55,13 @@ export function renderGrid(days, cfg) {
 
   const todayIso = DateTime.now().setZone(cfg.timezone).toISODate();
 
-  // 3 rows (weeks)
+  // Render 3 week rows
   for (let row = 0; row < 3; row++) {
+    const weekStart = days[row * 7];
+    const weekNumberCell = document.createElement('div');
+    weekNumberCell.className = 'row-header';
+    weekNumberCell.textContent = String(weekStart.weekNumber);
+    grid.appendChild(weekNumberCell);
     for (let col = 0; col < 7; col++) {
       const idx = row * 7 + col;
       const dt = days[idx];
@@ -69,10 +74,9 @@ export function renderGrid(days, cfg) {
       }
       const head = document.createElement('div');
       head.className = 'cell-header';
-      // Month abbreviation rules: first Monday cell (days[0]) already handled separately above.
-      // For any cell where day-of-month = 1 include month (e.g., '1 Nov').
       const dayNum = dt.toFormat('d');
-      if (dt.day === 1) {
+      // Month abbreviation rule: first Monday cell OR any day-of-month = 1 cell
+      if (idx === 0 || dt.day === 1) {
         head.textContent = `${dayNum} ${dt.toFormat('LLL')}`;
       } else {
         head.textContent = dayNum;
@@ -96,6 +100,16 @@ export function attachEvents(events, timezone) {
   for (const [date, list] of byDate.entries()) {
     const cell = document.querySelector(`.cell[data-date="${date}"]`);
     if (!cell) continue;
+    // Sort events: all-day first (alpha), then timed by start
+    list.sort((a, b) => {
+      if (a.isAllDay && !b.isAllDay) return -1;
+      if (!a.isAllDay && b.isAllDay) return 1;
+      if (a.isAllDay && b.isAllDay) {
+        return a.subject.localeCompare(b.subject);
+      }
+      // both timed
+      return new Date(a.start) - new Date(b.start);
+    });
     if (list.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';
@@ -107,7 +121,7 @@ export function attachEvents(events, timezone) {
       const div = document.createElement('div');
       div.className = 'event' + (ev.isAllDay ? ' all-day' : '');
       if (ev.isAllDay) {
-        div.textContent = ev.subject + (ev.dayIndex && ev.dayIndex > 0 ? ' …' : ''); // continuation indicator
+        div.textContent = ev.subject + (ev.dayIndex && ev.dayIndex > 0 ? ' …' : '');
       } else {
         const start = DateTime.fromISO(ev.start).setZone(timezone);
         const end = DateTime.fromISO(ev.end).setZone(timezone);
@@ -135,15 +149,32 @@ export function attachEvents(events, timezone) {
   });
 }
 
+let refreshTimer;
+let midnightTimer;
+
 function setupMidnightRollover(cfg) {
-  setInterval(() => {
+  if (midnightTimer) clearInterval(midnightTimer);
+  midnightTimer = setInterval(() => {
     const currentDay = DateTime.now().setZone(cfg.timezone).toISODate();
     const highlighted = document.querySelector('.current-day');
     if (highlighted && highlighted.dataset.date !== currentDay) {
-      // Re-render grid on rollover
       initCalendar();
     }
-  }, 60_000); // check each minute
+  }, 60_000); // minute checks acceptable
+}
+
+function setupPeriodicRefresh(cfg) {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async () => {
+    // Refresh events (FR-018a) without rebuilding grid unless day changed
+    const events = await loadEvents();
+    // Clear old events (preserve headers & existing cells)
+    document.querySelectorAll('.cell').forEach(c => {
+      // Remove all children except the first (header)
+      while (c.children.length > 1) c.removeChild(c.lastChild);
+    });
+    attachEvents(events, cfg.timezone);
+  }, 180_000); // 180s
 }
 
 export async function initCalendar(preloadedCfg) {
@@ -153,4 +184,5 @@ export async function initCalendar(preloadedCfg) {
   const events = await loadEvents();
   attachEvents(events, cfg.timezone);
   setupMidnightRollover(cfg);
+  setupPeriodicRefresh(cfg);
 }

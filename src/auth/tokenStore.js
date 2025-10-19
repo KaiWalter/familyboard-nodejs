@@ -40,8 +40,14 @@ export function readTokens() {
 export function writeTokens(tokens) {
   const now = Date.now();
   const existing = readTokens();
-  const rotation = (existing?.rotation ?? 0) + (existing ? 1 : 0);
-  const toWrite = { rotation, status: 'OK', ...existing, ...tokens };
+  let rotation = existing?.rotation ?? 0;
+  if (existing && tokens.accessToken && tokens.accessToken !== existing.accessToken) {
+    rotation += 1; // genuine new access token
+  }
+  // Build object ensuring computed rotation overrides any existing value
+  const toWrite = { ...existing, ...tokens };
+  toWrite.rotation = rotation;
+  toWrite.status = 'OK';
   if (!toWrite.tokenType) {
     // Heuristic: presence of refreshToken implies user token; else application
     toWrite.tokenType = toWrite.refreshToken && toWrite.refreshToken !== 'no_refresh_token' ? 'user' : 'application';
