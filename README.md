@@ -39,6 +39,28 @@ All runtime configuration is file-based via `data/config.json` (no in-app config
 	}
 }
 ```
+Current (obfuscated) working sample:
+```jsonc
+{
+	"calendarIds": ["..........calendar id.........."],
+	"photoFolderPath": "images",
+	"locale": "en-US",
+	"timezone": "UTC",
+	"goldenRatio": true,
+		"auth": {
+			"clientId": "..........client id..........",
+		"clientSecret": "..........client secret..........",
+		"redirectUri": "http://localhost:3000/callback",
+		"scopes": ["User.Read", "Calendars.Read", "Files.Read.All"],
+		"rateLimitPerMinute": 5
+	}
+}
+```
+Notes:
+- `calendarIds` truncated for readability.
+- `clientSecret` displayed only as current working value; in production place in `AUTH_CLIENT_SECRET` env variable and omit from file.
+- Using `Files.Read.All` (admin consent may be required); switch to `Files.Read` if least privilege suffices.
+- Leading slash on `photoFolderPath` accepted; normalized internally.
 Additional settings:
 - `photoFolderPath`: Path under user drive root (`Pictures/FamilyBoard`).
 - `goldenRatio`: Boolean to enable calendar:photo width ≈ 1.618:1 pixel ratio.
@@ -192,6 +214,9 @@ If the token health script reports `accessToken not a well-formed JWT (opaque to
 
 ### Temporary Opaque Token Acceptance
 The application now accepts opaque access tokens (no dots) to avoid hard failures, but emits audit event `graph.token.opaque_format` with the token length. Treat this as a migration hint; switch to v2 delegated scopes so Graph returns a standard JWT. Advantages of JWT: easier diagnostics (can inspect expiry and scopes locally) and consistent validation logic.
+
+### OneDrive Photo Listing Notes
+`@microsoft.graph.downloadUrl` is a computed property which may be omitted when using an explicit `$select`. The service now avoids `$select` for photo listing and, if any photo items lack a download URL, performs a limited per-item fallback fetch (audit events: `graph.photos.downloadurl.missing`, `graph.photos.downloadurl.fetch_error`). This ensures images with a `photo` facet become displayable even when initial listing omits direct download links.
 
 ### Status Endpoint Polling
 Periodic `GET /status` returns remaining minutes and scopes; use it in monitoring to detect impending expiry and trigger refresh/login workflow.

@@ -108,18 +108,43 @@ export async function fetchPhotoItems(folderPath) {
   async function page(url) {
     return client
       .api(url || basePath)
-      .select('id,name,@microsoft.graph.downloadUrl,photo')
+      // Removed .select to allow presence of @microsoft.graph.downloadUrl (a computed property not reliably returned when selected explicitly)
       .top(200)
       .get();
   }
   try {
     do {
       const resp = await graphRequestWithRetry(() => page(nextLink), context);
-      const items = (resp.value || []).filter(i => i['@microsoft.graph.downloadUrl'] && i.photo);
+      let itemsRaw = resp.value || [];
+      // Filter only image-like items (presence of photo facet) initially
+      let items = itemsRaw.filter(i => i.photo);
       all.push(...items);
       audit('graph.photos.page', { folderPath, pageCount: items.length, total: all.length, hasNext: !!resp['@odata.nextLink'] });
+      if(items.length === 0) {
+        // Verbose diagnostic snapshot (no photo items found)
+        const diag = Object.keys(resp).reduce((o,k) => { if(k !== 'value') o[k]=resp[k]; return o; }, {});
+        audit('graph.photos.page.empty_diag', { folderPath, keys: Object.keys(resp), diag });
+      }
       nextLink = resp['@odata.nextLink'];
     } while (nextLink);
+    // Detect missing downloadUrl values; fallback fetch per id for small batches
+    const missingDl = all.filter(i => !i['@microsoft.graph.downloadUrl']);
+    if (missingDl.length) {
+      audit('graph.photos.downloadurl.missing', { folderPath, count: missingDl.length });
+      // Fallback: fetch each item by id to retrieve download URL; limit to first 200 to avoid excessive calls
+      const maxFallback = 200;
+      const subset = missingDl.slice(0, maxFallback);
+      for (const item of subset) {
+        try {
+          const detail = await client.api(`/me/drive/items/${item.id}`).get();
+          if (detail['@microsoft.graph.downloadUrl']) {
+            item['@microsoft.graph.downloadUrl'] = detail['@microsoft.graph.downloadUrl'];
+          }
+        } catch (e) {
+          audit('graph.photos.downloadurl.fetch_error', { id: item.id, message: e.message });
+        }
+      }
+    }
     audit('graph.photos.fetch.success', { folderPath, count: all.length });
     return all.map(i => ({
       id: i.id,
