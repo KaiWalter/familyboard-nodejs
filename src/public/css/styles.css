@@ -19,6 +19,8 @@ img.photo { max-width: 100%; max-height: 100%; transition: opacity 0.4s ease; }
 .event { font-size: 0.7rem; line-height: 1rem; border-left: 2px solid var(--border); padding-left: 0.25rem; margin-bottom: 2px; }
 .event.all-day { border-left-color: var(--accent); }
 .empty { opacity: 0.3; font-style: italic; }
+.auth-indicator { position: absolute; left: 0; bottom: 0; background: rgba(0,0,0,0.55); padding: 0.4rem 0.6rem; font-size: 0.65rem; font-family: monospace; white-space: nowrap; }
+.auth-indicator button { font-size: 0.6rem; cursor: pointer; }
 @media (prefers-color-scheme: light) {
   :root { --bg:#fdfdfd; --fg:#111; --border:#555; --accent:#222; }
 }

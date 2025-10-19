@@ -9,7 +9,14 @@ paths:
   /signin:
     get:
       summary: Initiate sign-in
-      description: Generates state and redirects user-agent to authorization provider.
+      description: Generates state and returns authorization URL (JSON when ?format=json) or redirects for browser user agents. Supports optional forceConsent prompt.
+      parameters:
+        - in: query
+          name: format
+          schema: { type: string, enum: [json] }
+        - in: query
+          name: forceConsent
+          schema: { type: string, enum: ['1'] }
       responses:
         '302':
           description: Redirect to authorization server
@@ -18,6 +25,15 @@ paths:
               schema:
                 type: string
               description: Authorization server URL containing state parameter
+        '200':
+          description: JSON payload (when format=json)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorizationUrl: { type: string }
+                  state: { type: string }
         '400':
           description: Invalid configuration / rate limit exceeded
   /callback:
@@ -40,21 +56,24 @@ paths:
             type: string
           required: false
       responses:
-        '302':
-          description: Redirect to application landing page after processing
-        '400':
-          description: State mismatch or missing code
-        '500':
-          description: Token exchange failure
+        '200': { description: Successful code exchange }
+        '400': { description: State mismatch, missing code/state, or scope mismatch }
+        '500': { description: Token exchange failure }
   /signout:
     post:
       summary: Invalidate current session
       description: Clears persisted tokens and marks session terminated.
       responses:
-        '204':
-          description: Sign-out successful (no content)
-        '401':
-          description: No active session
+        '200': { description: Sign-out successful }
+        '400': { description: No active session }
+  /api/auth/rotate:
+    post:
+      summary: Manual token refresh
+      description: Uses stored refresh token to acquire new access token. Test mode may simulate.
+      responses:
+        '200': { description: Refresh succeeded }
+        '400': { description: No user session or no refresh token }
+        '500': { description: Refresh failed }
   /status/auth:
     get:
       summary: Auth status

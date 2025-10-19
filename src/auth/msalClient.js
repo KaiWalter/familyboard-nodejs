@@ -12,6 +12,11 @@ const config = {
 
 export const msalClient = new PublicClientApplication(config);
 
+// Backwards-compatible loader used by routes needing direct client handle
+export function loadMsalClient() {
+  return msalClient;
+}
+
 export async function acquireTokenSilent(scopes) {
   const tokens = readTokens();
   if (!tokens) return null;

@@ -7,8 +7,6 @@ import { exchangeAuthorizationCode } from '../../auth/codeExchange.js';
 
 const router = Router();
 
-// Skeleton: For now simulate token exchange without outbound HTTP.
-// Accepts query: code, state. Validates state. Persists mock tokens.
 router.get('/', async (req, res) => {
   const { code, state } = req.query;
   if (!code || !state) {
@@ -21,12 +19,11 @@ router.get('/', async (req, res) => {
   const cfg = loadConfig();
   try {
     const tokenSet = await exchangeAuthorizationCode(code);
-    // Validate scopes: require every configured scope to be present in granted.
-    // Allow provider to add standard OIDC scopes (openid, profile, email, offline_access) or ordering differences.
+    let rawScopes = tokenSet.scopes || [];
+    if (typeof rawScopes === 'string') rawScopes = rawScopes.split(/\s+/).filter(Boolean);
     const requestedSet = new Set(cfg.auth.scopes.map(s => s.toLowerCase()));
-    const grantedList = (tokenSet.scopes || []).map(s => s.toLowerCase());
+    const grantedList = rawScopes.map(s => s.toLowerCase());
     const grantedSet = new Set(grantedList);
-    const ignore = new Set(['openid','profile','email','offline_access']);
     let missing = [];
     for (const r of requestedSet) {
       if (!grantedSet.has(r)) missing.push(r);

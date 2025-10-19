@@ -2,7 +2,12 @@ openapi: 3.1.0
 info:
   title: FamilyBoard Photo & Calendar API
   version: 0.1.0
-  description: Minimal API for kiosk SPA providing configuration, calendar events, photo listing, and auth status.
+  description: |
+    Minimal API for kiosk SPA providing configuration, calendar events, photo listing, and auth status.
+    Interactive-only authentication model:
+      - Authorization Code + Refresh Token using delegated user consent.
+      - No client credentials fallback; protected endpoints require a user session.
+    Interactive endpoints: /signin, /callback, /signout, /api/auth/rotate.
 servers:
   - url: http://localhost:3000
 paths:
@@ -99,11 +104,20 @@ paths:
                   $ref: '#/components/schemas/PhotoAsset'
   /signin:
     get:
-      summary: Initiate confidential authorization code sign-in
-      operationId: initiateSignin
+      summary: Initiate interactive sign-in
+      description: Generates a single-use state and returns (or redirects to) an authorization URL. Uses exactly configured scopes (no implicit offline_access addition).
+      parameters:
+        - in: query
+          name: format
+          schema: { type: string, enum: [json] }
+          description: Force JSON response instead of 302 redirect for browser UAs.
+        - in: query
+          name: forceConsent
+          schema: { type: string, enum: ['1'] }
+          description: Adds prompt=consent to authorization request.
       responses:
         '200':
-          description: Authorization initiation response (contains provider URL)
+          description: Authorization URL JSON payload
           content:
             application/json:
               schema:
@@ -111,22 +125,13 @@ paths:
                 properties:
                   authorizationUrl: { type: string }
                   state: { type: string }
-        '429':
-          description: Rate limited
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Misconfiguration
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+        '302':
+          description: Redirect to authorization server (browser UA without ?format=json)
+        '429': { description: Rate limited }
+        '500': { description: Misconfiguration or client init failure }
   /callback:
     get:
-      summary: Authorization code callback endpoint
-      operationId: authCallback
+      summary: Authorization redirect handler
       parameters:
         - in: query
           name: code
@@ -137,35 +142,21 @@ paths:
           schema: { type: string }
           required: true
       responses:
-        '200':
-          description: Authentication succeeded
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-        '400':
-          description: Invalid or mismatched state / missing params
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+        '200': { description: Successful code exchange & persistence }
+        '400': { description: Invalid or missing state / scope mismatch }
+        '500': { description: Token exchange failure }
   /signout:
     post:
-      summary: Sign out and clear stored tokens
-      operationId: signOut
+      summary: Clear persisted tokens
       responses:
-        '204':
-          description: Signed out (no content)
-        '200':
-          description: Signed out (legacy variant)
-        '400':
-          description: No active session
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+        '200': { description: Sign-out successful (tokens cleared) }
+  /api/auth/rotate:
+    post:
+      summary: Manually refresh access token (user tokens only)
+      responses:
+        '200': { description: Refresh succeeded }
+        '400': { description: No user session or no refresh token }
+        '500': { description: Refresh failed }
 components:
   schemas:
     CalendarEvent:
@@ -248,4 +239,8 @@ components:
         remainingMinutes: { type: number }
         rotation: { type: number }
         configured: { type: boolean }
+        hasRefreshToken: { type: boolean }
+        tokenType:
+          type: string
+          enum: [user, application]
 security: []

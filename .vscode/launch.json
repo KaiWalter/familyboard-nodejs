@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug FamilyBoard (port 3000)",
+      "program": "${workspaceFolder}/src/server/index.js",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PORT": "3000"
+      },
+      "runtimeArgs": [
+        "--enable-source-maps"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/**/*.js"
+      ],
+      "serverReadyAction": {
+        "pattern": "listening on port 3000",
+        "action": "openExternally",
+        "uriFormat": "http://localhost:3000"
+      }
+    }
+  ]
+}

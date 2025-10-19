@@ -8,6 +8,7 @@ import photosRouter from './routes/photos.js';
 import signinRouter from './routes/signin.js';
 import callbackRouter from './routes/callback.js';
 import signoutRouter from './routes/signout.js';
+import authRotateRouter from './routes/authRotate.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,5 +24,6 @@ app.use('/api/photos', photosRouter);
 app.use('/signin', signinRouter);
 app.use('/callback', callbackRouter);
 app.use('/signout', signoutRouter);
+app.use('/api/auth/rotate', authRotateRouter);
 
 export default app;

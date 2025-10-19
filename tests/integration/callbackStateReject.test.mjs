@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import http from 'node:http';
 import app from '../../src/server/app.js';
 import { readTokens, clearTokens } from '../../src/auth/tokenStore.js';
+import { ConfidentialClientApplication } from '@azure/msal-node';
 
 function startServer() {
 	return new Promise(resolve => {
@@ -19,8 +20,10 @@ test('callback rejects invalid state', async () => {
 	process.env.AUTH_CLIENT_ID = 'client';
 	process.env.AUTH_CLIENT_SECRET = 'secret';
 	process.env.AUTH_REDIRECT_URI = 'http://localhost/callback';
-	process.env.AUTH_SCOPES = 'User.Read';
-	process.env.AUTH_TEST_MODE = '1';
+	process.env.AUTH_SCOPES = 'User.Read'; // single scope; callback expects same
+	// msal mandatory: monkey patch acquireTokenByCode for deterministic behavior
+	const originalAcquireInvalid = ConfidentialClientApplication.prototype.acquireTokenByCode;
+	ConfidentialClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'ignored', refreshToken: null, expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
 
 	const { server, port } = await startServer();
 	try {
@@ -38,8 +41,9 @@ test('callback accepts valid state and persists tokens', async () => {
 	process.env.AUTH_CLIENT_ID = 'client';
 	process.env.AUTH_CLIENT_SECRET = 'secret';
 	process.env.AUTH_REDIRECT_URI = 'http://localhost/callback';
-	process.env.AUTH_SCOPES = 'User.Read';
-	process.env.AUTH_TEST_MODE = '1';
+	process.env.AUTH_SCOPES = 'User.Read'; // keep single scope to align with mocked acquireTokenByCode scopes
+	const originalAcquireValid = ConfidentialClientApplication.prototype.acquireTokenByCode;
+	ConfidentialClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'mock_access_xyz', refreshToken: 'mock_refresh_xyz', expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
 
 	clearTokens();
 	const { server, port } = await startServer();
@@ -55,6 +59,7 @@ test('callback accepts valid state and persists tokens', async () => {
 		assert.ok(tokens, 'tokens file written');
 		assert.match(tokens.accessToken, /mock_access_xyz/);
 	} finally {
+		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireValid;
 		server.close();
 	}
 });

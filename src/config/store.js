@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { audit } from '../util/log.js';
 
 const CONFIG_PATH = path.resolve('data/config.json');
 
@@ -13,9 +14,9 @@ const defaults = {
     clientId: '',
     clientSecret: '',
     redirectUri: 'http://localhost:3000/callback',
-    scopes: ['User.Read'],
+    scopes: ['User.Read', 'offline_access'],
     rateLimitPerMinute: 5,
-    tenant: 'common'
+    tenant: 'consumers'
   }
 };
 
@@ -36,6 +37,7 @@ export function loadConfig() {
     if (process.env.AUTH_SCOPES) {
       merged.auth.scopes = process.env.AUTH_SCOPES.split(',').map(s => s.trim()).filter(Boolean);
     }
+    // Removed: offline_access auto-append; scopes now respected exactly as configured.
     if (process.env.AUTH_RATE_LIMIT) {
       const rl = parseInt(process.env.AUTH_RATE_LIMIT, 10);
       if (!Number.isNaN(rl) && rl > 0) merged.auth.rateLimitPerMinute = rl;

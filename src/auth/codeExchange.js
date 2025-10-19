@@ -1,7 +1,5 @@
 // codeExchange.js - encapsulates authorization code -> token exchange
-// Supports two modes:
-// 1. Test mode (AUTH_TEST_MODE=1) returns mock tokens deterministically without network
-// 2. Real mode uses msal-node ConfidentialClientApplication to exchange the code
+// Single mode: msal-node ConfidentialClientApplication performs authorization code exchange.
 //
 // Returns a normalized token set:
 // {
@@ -34,25 +32,12 @@ function getClient(cfg) {
 }
 
 export async function exchangeAuthorizationCode(code) {
-  if (global.__EXCHANGE_OVERRIDE__) {
-    return global.__EXCHANGE_OVERRIDE__(code);
-  }
   const cfg = loadConfig();
   const scopes = cfg.auth.scopes;
-  // Test mode short-circuit
-  if (process.env.AUTH_TEST_MODE === '1') {
-    const expiresAt = Date.now() + 3600_000; // 1h
-    return {
-      accessToken: 'mock_access_' + code,
-      refreshToken: 'mock_refresh_' + code,
-      expiresAt,
-      scopes,
-      provider: 'mock'
-    };
-  }
 
   try {
-    const cca = getClient(cfg);
+  const cca = getClient(cfg);
+  audit('auth.code_exchange.client_init', { authority: cca.config.auth.authority, clientIdPrefix: cfg.auth.clientId?.slice(0,8) });
     const result = await cca.acquireTokenByCode({
       code,
       redirectUri: cfg.auth.redirectUri,
@@ -61,16 +46,21 @@ export async function exchangeAuthorizationCode(code) {
     if (!result || !result.accessToken) {
       throw new Error('empty_result');
     }
-    // msal exposes scopes as space-separated string in token, enforce exact match
-    const grantedScopes = (result.scopes || scopes);
+    // Normalize granted scopes: msal may return space-delimited string; convert to array
+    let grantedScopes = result.scopes || scopes;
+    if (typeof grantedScopes === 'string') {
+      grantedScopes = grantedScopes.split(/\s+/).filter(Boolean);
+    }
     // Normalize expiresOn (Date) to ms epoch
     const expiresAt = result.expiresOn instanceof Date ? result.expiresOn.getTime() : (Date.now() + 3500_000);
+    const refreshToken = result.refreshToken || null;
     return {
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken || 'no_refresh_token',
+      refreshToken: refreshToken || 'no_refresh_token',
       expiresAt,
       scopes: grantedScopes,
-      provider: 'msal'
+      provider: 'msal',
+      tokenType: 'user'
     };
   } catch (e) {
     audit('auth.code_exchange.error', { message: e.message, errorCodes: e.errorCodes, subError: e.subError, name: e.name });

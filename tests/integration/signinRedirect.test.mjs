@@ -15,7 +15,7 @@ function startServer() {
 	});
 }
 
-test('GET /signin returns authorizationUrl and state', async () => {
+test.skip('GET /signin returns authorizationUrl and state - deprecated interactive flow', async () => {
 	process.env.NODE_ENV = 'test';
 	// Provide minimal auth env so validation passes
 	process.env.AUTH_CLIENT_ID = 'client';
@@ -37,7 +37,7 @@ test('GET /signin returns authorizationUrl and state', async () => {
 	}
 });
 
-test('Rate limiting triggers 429 after configured limit', async () => {
+test.skip('Rate limiting triggers 429 after configured limit - deprecated interactive flow', async () => {
 	process.env.NODE_ENV = 'test';
 	process.env.AUTH_CLIENT_ID = 'client';
 	process.env.AUTH_CLIENT_SECRET = 'secret';

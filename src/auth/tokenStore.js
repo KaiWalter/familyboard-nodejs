@@ -21,7 +21,13 @@ Notes:
 - Mask tokens before logging using maskToken().
 */
 
-const TOKEN_PATH = path.resolve('data/tokens.json');
+// Allow tests to isolate token persistence to avoid cross-test interference.
+// Primary file remains data/tokens.json but can be swapped via setTokenPath() or TOKENS_PATH env.
+let TOKEN_PATH = path.resolve(process.env.TOKENS_PATH || 'data/tokens.json');
+
+export function setTokenPath(p) {
+  TOKEN_PATH = path.resolve(p);
+}
 
 export function readTokens() {
   try {
@@ -36,6 +42,10 @@ export function writeTokens(tokens) {
   const existing = readTokens();
   const rotation = (existing?.rotation ?? 0) + (existing ? 1 : 0);
   const toWrite = { rotation, status: 'OK', ...existing, ...tokens };
+  if (!toWrite.tokenType) {
+    // Heuristic: presence of refreshToken implies user token; else application
+    toWrite.tokenType = toWrite.refreshToken && toWrite.refreshToken !== 'no_refresh_token' ? 'user' : 'application';
+  }
   if (!toWrite.expiresAt && toWrite.expiresOn) {
     toWrite.expiresAt = toWrite.expiresOn; // back-compat
     delete toWrite.expiresOn;

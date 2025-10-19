@@ -42,6 +42,24 @@ async function performRefresh(scopes, acquireFn) {
   return silent;
 }
 
+// One-shot manual refresh (no scheduler/backoff). Returns { updated: boolean, error?: string }
+export async function performSingleRefresh(scopes, acquireFn = acquireTokenSilent) {
+  const tokens = readTokens();
+  if (!tokens) return { updated: false, error: 'no_tokens' };
+  try {
+    const res = await performRefresh(scopes, acquireFn);
+    if (!res || !res.expiresOn) return { updated: false, error: 'refresh_failed' };
+    if (cancelled) return { updated: false, error: 'cancelled' };
+    writeTokens({ account: res.account, expiresAt: res.expiresOn.getTime(), scopes, refreshToken: res.refreshToken || tokens.refreshToken });
+    audit('auth.refresh.manual_success', { newExpiry: res.expiresOn.getTime() });
+    updateStatus('OK');
+    return { updated: true };
+  } catch (e) {
+    audit('auth.refresh.manual_failed', { message: e.message });
+    return { updated: false, error: e.message };
+  }
+}
+
 export function startRefreshScheduler(scopes, acquireFn = acquireTokenSilent, checkIntervalMs = CHECK_INTERVAL_MS) {
   if (intervalId) clearInterval(intervalId);
   cancelled = false;

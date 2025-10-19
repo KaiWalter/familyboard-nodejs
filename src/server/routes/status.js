@@ -19,7 +19,8 @@ router.get('/', (req, res) => {
       expiresAt: exp || null,
       remainingMinutes,
       rotation: tokens?.rotation ?? 0,
-      scopes: tokens?.scopes || []
+      scopes: tokens?.scopes || [],
+      hasRefreshToken: !!(tokens?.refreshToken && tokens.refreshToken !== 'no_refresh_token')
     },
     eventsCacheAgeMs: cacheAgeMs('events'),
     photosCacheAgeMs: cacheAgeMs('photos')
