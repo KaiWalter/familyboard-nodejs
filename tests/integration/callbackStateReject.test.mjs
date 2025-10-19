@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
-import app from '../../src/server/app.js';
 // tokenStore removed; use debug auth endpoint and metadata
-import { PublicClientApplication } from '@azure/msal-node';
+import { PublicClientApplication, ConfidentialClientApplication } from '@azure/msal-node';
 
-function startServer() {
+async function startServer() {
+	const { default: app } = await import('../../src/server/app.js');
 	return new Promise(resolve => {
 		const server = http.createServer(app);
 		server.listen(0, () => {
@@ -22,8 +22,10 @@ test('callback rejects invalid state', async () => {
 	process.env.AUTH_REDIRECT_URI = 'http://localhost/callback';
 	process.env.AUTH_SCOPES = 'User.Read'; // single scope; callback expects same
 	// msal mandatory: monkey patch acquireTokenByCode for deterministic behavior
-	const originalAcquireInvalid = PublicClientApplication.prototype.acquireTokenByCode;
+	const originalAcquireInvalidPublic = PublicClientApplication.prototype.acquireTokenByCode;
+	const originalAcquireInvalidConfidential = ConfidentialClientApplication.prototype.acquireTokenByCode;
 	PublicClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'ignored', refreshToken: null, expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
+	ConfidentialClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'ignored', refreshToken: null, expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
 
 	const { server, port } = await startServer();
 	try {
@@ -32,6 +34,8 @@ test('callback rejects invalid state', async () => {
 		const body = await res.json();
 		assert.equal(body.error, 'invalid_state');
 	} finally {
+		PublicClientApplication.prototype.acquireTokenByCode = originalAcquireInvalidPublic;
+		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireInvalidConfidential;
 		server.close();
 	}
 });
@@ -42,8 +46,10 @@ test('callback accepts valid state, persists tokens, and redirects to root', asy
 	process.env.AUTH_CLIENT_SECRET = 'secret';
 	process.env.AUTH_REDIRECT_URI = 'http://localhost/callback';
 	process.env.AUTH_SCOPES = 'User.Read'; // keep single scope to align with mocked acquireTokenByCode scopes
-	const originalAcquireValid = PublicClientApplication.prototype.acquireTokenByCode;
+	const originalAcquireValidPublic = PublicClientApplication.prototype.acquireTokenByCode;
+	const originalAcquireValidConfidential = ConfidentialClientApplication.prototype.acquireTokenByCode;
 	PublicClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'mock_access_xyz', refreshToken: 'mock_refresh_xyz', expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
+	ConfidentialClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'mock_access_xyz', refreshToken: 'mock_refresh_xyz', expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
 
 	// No token file to clear; state store ensures validity
 	const { server, port } = await startServer();
@@ -64,7 +70,8 @@ test('callback accepts valid state, persists tokens, and redirects to root', asy
 		// In test mode with mocked code exchange, account objects may not be present; rely on metadata only
 		assert.ok(['OK','NO_TOKEN','ERROR'].includes(dbg.metadata.status));
 	} finally {
-		PublicClientApplication.prototype.acquireTokenByCode = originalAcquireValid;
+		PublicClientApplication.prototype.acquireTokenByCode = originalAcquireValidPublic;
+		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireValidConfidential;
 		server.close();
 	}
 });

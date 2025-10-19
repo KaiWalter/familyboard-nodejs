@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
-import app from '../../src/server/app.js';
 // tokenStore removed; rely on debug auth endpoint
-import { PublicClientApplication } from '@azure/msal-node';
+import { PublicClientApplication, ConfidentialClientApplication } from '@azure/msal-node';
 
-function startServer() {
+async function startServer() {
+	const { default: app } = await import('../../src/server/app.js');
 	return new Promise(resolve => {
 		const server = http.createServer(app);
 		server.listen(0, () => {
@@ -21,8 +21,11 @@ test('signout clears persisted tokens', async () => {
 	process.env.AUTH_CLIENT_SECRET = 'secret';
 	process.env.AUTH_REDIRECT_URI = 'http://localhost/callback';
 	process.env.AUTH_SCOPES = 'User.Read';
-	const originalAcquire = PublicClientApplication.prototype.acquireTokenByCode;
-	PublicClientApplication.prototype.acquireTokenByCode = async () => ({ accessToken: 'mock_access_abc123', refreshToken: 'mock_refresh_abc123', expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] });
+	const originalAcquirePublic = PublicClientApplication.prototype.acquireTokenByCode;
+	const originalAcquireConfidential = ConfidentialClientApplication.prototype.acquireTokenByCode;
+	const fake = { accessToken: 'mock_access_abc123', refreshToken: 'mock_refresh_abc123', expiresOn: new Date(Date.now()+3600_000), scopes: ['User.Read'] };
+	PublicClientApplication.prototype.acquireTokenByCode = async () => fake;
+	ConfidentialClientApplication.prototype.acquireTokenByCode = async () => fake;
 	// No token path configuration needed
 
 	const { server, port } = await startServer();
@@ -43,7 +46,8 @@ test('signout clears persisted tokens', async () => {
 		dbg = await debugRes.json();
 		assert.ok(dbg.accounts.length === 0 || dbg.metadata.status !== 'OK', 'accounts cleared or status not OK');
 	} finally {
-		PublicClientApplication.prototype.acquireTokenByCode = originalAcquire;
+		PublicClientApplication.prototype.acquireTokenByCode = originalAcquirePublic;
+		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireConfidential;
 		server.close();
 	}
 });

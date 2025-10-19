@@ -115,11 +115,12 @@ Final refinements, accessibility, performance, resilience.
  - [X] T049 Add DST boundary test `tests/unit/dstBoundary.test.mjs`
  - [X] T050 Document security guidance in README (token file permissions)
 	- [ ] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
+	- [X] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
 	- [ ] T052 Add test (jsdom or integration) ensuring immediate first photo display before rotation interval elapses
 	- [ ] T053 Distinguish placeholders in photo panel: unauthenticated ("Sign in required") vs empty folder ("No photos found") visual/text test
 	- [ ] T054 Add favicon presence assertion (public/index.html includes link rel="icon")
-	- [ ] T055 Add test ensuring month abbreviation appears on all day-of-month=1 cells within 21-day span
-	- [ ] T056 Add test verifying golden ratio width tolerance ±5% when enabled (reuse ratio.test or extend)
+	- [X] T055 Add test ensuring month abbreviation appears on all day-of-month=1 cells within 21-day span
+	- [X] T056 Add test verifying golden ratio width tolerance ±5% when enabled (reuse ratio.test or extend)
 	- [ ] T057 Add test verifying no vertical/horizontal scrollbars in 1080p viewport simulation (CSS overflow hidden)
 	- [ ] T058 Add test verifying orientation classes applied (.portrait/.landscape) based on metadata width/height
 	- [ ] T059 Add test verifying offline banner does not alter panel width ratio (snapshot before/after offline simulation)
