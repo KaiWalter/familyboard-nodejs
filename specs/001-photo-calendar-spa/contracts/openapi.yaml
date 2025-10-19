@@ -142,9 +142,18 @@ paths:
           schema: { type: string }
           required: true
       responses:
-        '200': { description: Successful code exchange & persistence }
+        '200':
+          description: Successful code exchange & persistence (JSON mode when Accept: application/json or ?format=json)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  redirect: { type: string, description: "Target root path '/' when kiosk redirect suppressed" }
         '400': { description: Invalid or missing state / scope mismatch }
         '500': { description: Token exchange failure }
+        '302': { description: Successful code exchange followed by redirect to root '/' }
   /signout:
     post:
       summary: Clear persisted tokens

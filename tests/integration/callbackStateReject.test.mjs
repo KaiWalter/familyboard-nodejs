@@ -36,7 +36,7 @@ test('callback rejects invalid state', async () => {
 	}
 });
 
-test('callback accepts valid state and persists tokens', async () => {
+test('callback accepts valid state, persists tokens, and redirects to root', async () => {
 	process.env.NODE_ENV = 'test';
 	process.env.AUTH_CLIENT_ID = 'client';
 	process.env.AUTH_CLIENT_SECRET = 'secret';
@@ -51,10 +51,11 @@ test('callback accepts valid state and persists tokens', async () => {
 		const signinRes = await fetch(`http://localhost:${port}/signin`);
 		const signinBody = await signinRes.json();
 		const { state } = signinBody;
-		const cbRes = await fetch(`http://localhost:${port}/callback?code=xyz&state=${state}`);
-		assert.equal(cbRes.status, 200);
-		const cbBody = await cbRes.json();
-		assert.equal(cbBody.success, true);
+		const cbRes = await fetch(`http://localhost:${port}/callback?code=xyz&state=${state}`, { redirect: 'manual' });
+		// Expect redirect
+		assert.equal(cbRes.status, 302);
+		const loc = cbRes.headers.get('location');
+		assert.equal(loc, '/', 'should redirect to root');
 		const tokens = readTokens();
 		assert.ok(tokens, 'tokens file written');
 		assert.match(tokens.accessToken, /mock_access_xyz/);

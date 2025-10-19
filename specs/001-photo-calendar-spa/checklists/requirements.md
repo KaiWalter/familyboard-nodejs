@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Photo & Calendar SPA (Merged Auth Requirements)
+# Specification Quality Checklist: Photo & Calendar SPA
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-10-18
@@ -24,9 +24,9 @@
 
 ## Feature Readiness
 
-- [x] All functional requirements have clear acceptance criteria (including newly merged authentication & security requirements FR-040..FR-056)
+- [x] All functional requirements have clear acceptance criteria (authentication & security requirements FR-040..FR-056 included)
 - [x] User scenarios cover primary flows
-- [x] Feature meets measurable outcomes defined in Success Criteria (including added SC-013..SC-020)
+- [x] Feature meets measurable outcomes defined in Success Criteria (SC-013..SC-020 included)
 - [x] No implementation details leak into specification
 
 ## Notes

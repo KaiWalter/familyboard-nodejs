@@ -63,6 +63,9 @@ If future requirements demand background (app-only) operations, reintroduce a se
 ## Sign-Out
 `POST /signout` – Deletes token file. Subsequent protected calls receive 401 until sign-in repeats.
 
+## Callback Redirect Behavior
+After a successful authorization code exchange at `/callback`, the server issues a `302` redirect to the kiosk root (`/`). To receive a JSON confirmation instead (useful for scripted or API-based automation), send `Accept: application/json` or append `?format=json`; the response will be `200 { "success": true, "redirect": "/" }`.
+
 ## Middleware Behavior
 `requireAuth`:
 1. If a user token exists (`tokenType: user`) – pass through.

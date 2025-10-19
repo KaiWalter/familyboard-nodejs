@@ -35,7 +35,12 @@ router.get('/', async (req, res) => {
     }
     writeTokens(tokenSet);
     audit('auth.callback.tokens_persisted', { expiresAt: tokenSet.expiresAt, provider: tokenSet.provider });
-    res.json({ success: true });
+    // Redirect to kiosk root after successful sign-in. If client explicitly requests JSON (e.g., via Accept header), return JSON instead.
+    const wantsJson = /application\/json/i.test(req.headers.accept || '') || req.query.format === 'json';
+    if (wantsJson) {
+      return res.json({ success: true, redirect: '/' });
+    }
+    return res.redirect(302, '/');
   } catch (e) {
     audit('auth.callback.exchange_error', { message: e.message });
     res.status(500).json({ error: 'exchange_failed' });

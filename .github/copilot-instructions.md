@@ -4,7 +4,6 @@ Auto-generated from all feature plans. Last updated: 2025-10-18
 
 ## Active Technologies
 - (001-photo-calendar-spa)
-- (002-signin-client-secret)
 
 ## Project Structure
 ```
@@ -20,8 +19,7 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
-- 001-photo-calendar-spa: Added
-- 002-signin-client-secret: Plan initialized (confidential sign-in flow)
+- 001-photo-calendar-spa: Active feature (photo, calendar, interactive auth)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

@@ -2,7 +2,7 @@ ios/ or android/
 # Implementation Plan: Unified Photo, Calendar & Confidential Auth
 
 **Branch**: `001-photo-calendar-spa` | **Date**: 2025-10-18 | **Spec**: `specs/001-photo-calendar-spa/spec.md`
-**Input**: Merged feature specification (original 001 + superseded 002 auth requirements)
+**Input**: Single feature specification (`specs/001-photo-calendar-spa/spec.md`)
 
 ## Summary
 Deliver a kiosk-style single-page application that displays a continuously updated 21-day family calendar alongside a rotating photo panel (90s interval) with golden-ratio layout option. Add secure confidential authorization code sign-in (/signin → provider → /callback) with token persistence, proactive refresh, auditing, rate limiting, and sign-out. Non-goals: multi-user roles, at-rest encryption, push/webhook updates.
