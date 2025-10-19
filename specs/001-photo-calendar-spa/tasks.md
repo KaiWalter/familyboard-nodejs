@@ -69,6 +69,7 @@ Independent Test: With photo config, images cycle every 90s; landscape letterbox
  - [X] T030 [US2] Add letterboxing neutral background in CSS
  - [X] T031 [US2] Add placeholder message when no photos
  - [X] T032 [US2] Integrate with API `/api/photos` route stub (`src/server/routes/photos.js`)
+ - [ ] T032a [US2] Replace photoService & photos route stub with Graph SDK OneDrive folder listing using `@microsoft/microsoft-graph-client`.
 
 ### Phase 5: User Story 3 – Configuration & Ratio (P3)
 Goal: Persist settings, apply golden ratio layout.
@@ -90,6 +91,11 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
  - [X] T040 [P] [US4] Implement refresh scheduler `src/auth/refreshScheduler.js` (interval check + <15% remaining lifetime threshold)
  - [X] T039a [US4] Implement one-time device code auth helper script `src/auth/authInit.js` (writes tokens.json)
  - [X] T041 [US4] Integrate token usage in calendarService & photoService (attach Authorization headers)
+	- [ ] T041a [US4] Implement Graph client wrapper (`src/services/graphClient.js`) providing authenticated Microsoft Graph instance.
+	- [ ] T041b [US4] Refactor calendarService to use Graph SDK `client.api('/me/calendars/{id}/calendarView')` (batched or sequential) with selected date range.
+	- [ ] T041c [US4] Refactor photoService to use Graph SDK to list OneDrive folder children and filter image MIME types.
+	- [ ] T041d [US4] Add error mapping & retry/backoff for Graph 429 / 5xx transient errors.
+	- [ ] T041e [US4] Add unit test for graphClient wrapper ensuring single initialization and token injection.
  - [X] T042 [US4] Update status route to include remainingMinutes calculation
  - [X] T043 [US4] Implement backoff logic in refreshScheduler.js (30s, 2m, 4m, etc.) up to 5 attempts
  - [X] T044 [US4] Add test `tests/integration/tokenRefresh.test.mjs` mocking msal for success/failure/backoff
@@ -98,6 +104,8 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
 Final refinements, accessibility, performance, resilience.
 
  - [X] T045 Optimize calendarService to skip unchanged event days (cache diff)
+	- [ ] T045a Add Graph throttling handling test simulating 429 response -> fallback to cache, then successful retry.
+	- [ ] T045b Add photo listing pagination handling (folders >200 items) using Graph `top` + `@odata.nextLink`.
  - [X] T046 Add accessibility improvements (aria labels on cells, verify contrast ≥4.5:1, CSS audit) in styles.css
  - [X] T046a Add continuation-day visual indicator for multi-day all-day events in `public/js/calendarView.js` (e.g., subtle ellipsis or arrow) 
  - [X] T046b Implement cached fallback logic in `src/services/calendarService.js` & `src/services/photoService.js` (serve cached JSON on fetch error) 

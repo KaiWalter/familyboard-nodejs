@@ -132,7 +132,9 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 
 - **FR-001**: System MUST display a continuous 21-day calendar range starting at local today.
 - **FR-002**: System MUST fetch and render events from up to 5 configured Outlook calendars.
+  - Implementation MUST use the official Microsoft Graph JavaScript SDK (`@microsoft/microsoft-graph-client`) instead of raw HTTP calls for Outlook calendar access.
 - **FR-003**: System MUST allow configuration of OneDrive folder path for photo source.
+  - Implementation MUST use Microsoft Graph JavaScript SDK for accessing OneDrive folder contents (listing images) via `/me/drive` or selected drive item endpoints.
 - **FR-004**: System MUST rotate through available photos at a fixed 90-second cycle (no manual controls).
 - **FR-005**: System MUST provide a layout where calendar pane width is greater than photo pane width using golden ratio (~1.618) when enabled.
 - **FR-006**: System MUST persist configuration (calendar IDs, folder path, ratio enabled) locally. (Photo rotation interval is fixed and excluded.)
@@ -180,6 +182,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 // Authentication & Security (merged from confidential sign-in feature; supersedes earlier implicit auth assumptions)
 - **FR-040**: System MUST expose a publicly reachable `/signin` entry point initiating an external authorization request for unauthenticated sessions.
 - **FR-041**: System MUST generate and bind a cryptographically strong, unique state value to each sign-in initiation and validate it on `/callback` to prevent request forgery.
+  - After authentication, all Microsoft Graph calls (calendar & OneDrive) MUST be performed through a single, reusable Graph client instance configured with an auth provider that injects the current access token.
 - **FR-042**: System MUST redirect to the authorization provider including required parameters (client identifier, requested scopes, redirect URI, state) without leaking confidential secrets in the browser-visible URL beyond industry-normal parameters.
 - **FR-043**: System MUST process `/callback` verifying presence & integrity of authorization response parameters (code, state, and any error indicators) before proceeding.
 - **FR-044**: System MUST exchange a valid authorization code for a token set (access token, refresh token if granted, issued/expiry metadata) prior to marking the session authenticated.
@@ -193,6 +196,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-052**: System MUST present a clear user-facing outcome in terminal states: success (authenticated), need to retry (expired/invalid code), cancellation (user/provider denial), or error (configuration issue).
 - **FR-053**: System MUST enforce configured scope boundaries disallowing escalation to unapproved scopes at initiation or callback validation.
 - **FR-054**: System MUST handle user/provider denial gracefully by presenting a neutral cancellation message with a retry path.
+  - Graph client error handling MUST map common Microsoft Graph error categories (authorization, throttling, transient network) to user-safe fallback behaviors (cache use, retry with backoff) without exposing raw stack traces.
 - **FR-055**: System MUST detect upstream revocation (failed refresh suggesting revocation) and clear local tokens prompting re-authentication.
 - **FR-056**: System MUST enable protected data fetch logic to distinguish authenticated vs unauthenticated requests reliably after sign-in or sign-out actions.
 
@@ -232,6 +236,8 @@ No critical ambiguities require clarification beyond reasonable defaults; no NEE
 - **SC-010**: Calendar auto-refresh executes successfully at 180s intervals with ≥95% success rate over 30 minutes under stable network.
 - **SC-011**: 100% of sampled events (≥30 mixed timed/all-day/multi-day including DST boundary) display correct localized times, ordering (all-day first), and repetition rules in validation tests.
 - **SC-012**: In a usability check, >90% of observers identify the current day cell within 2 seconds using only the monochrome border highlight.
+- **SC-012a**: ≥95% of Microsoft Graph calendar fetches succeed without uncaught exceptions over a 30‑minute observation (token valid scenario) using the SDK.
+- **SC-012b**: On simulated 429 (throttling) from Graph, system falls back to cached events and retries after recommended `Retry-After` (if provided) or exponential backoff; success within 2 subsequent attempts ≥80%.
 - **SC-013**: ≥95% of successful sign-ins (from `/signin` initiation to authenticated state) complete in under 15 seconds of active user interaction time.
 - **SC-014**: 100% of callback requests with invalid or mismatched state are rejected without storing any token data.
 - **SC-015**: 0% of raw token values appear in user-visible responses or logs (verified by targeted review / automated scan sampling).
@@ -240,6 +246,8 @@ No critical ambiguities require clarification beyond reasonable defaults; no NEE
 - **SC-018**: Rate limiting prevents more than the configured threshold of failed sign-in initiations per minute per source with <1% false positive blocking.
 - **SC-019**: User/provider cancellation yields a retry path that ≥90% of users successfully utilize within one additional attempt.
 - **SC-020**: ≥98% of security-relevant events (state mismatch, invalid code, refresh failure) have corresponding audit entries.
+- **SC-021**: Photo listing via Graph (OneDrive) returns at least one image or a placeholder message within 3 seconds for folders ≤200 items.
+- **SC-022**: Graph client initialization occurs exactly once per process lifecycle (verified by audit log count) and reuses access tokens until refresh.
 
 ## Assumptions
 

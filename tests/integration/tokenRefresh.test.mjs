@@ -1,2 +1,1 @@
-import test from 'node:test';
-test.skip('duplicate refresh scheduler test (intentionally skipped)', () => {});
+// Removed duplicate refresh scheduler test placeholder (2025-10-19)

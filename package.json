@@ -13,6 +13,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "luxon": "^3.4.4",
-    "@azure/msal-node": "^2.6.4"
+    "@azure/msal-node": "^2.6.4",
+    "@microsoft/microsoft-graph-client": "^3.0.0"
   }
 }
