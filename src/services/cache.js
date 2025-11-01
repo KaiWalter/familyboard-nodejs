@@ -7,10 +7,10 @@ const caches = {
 // Structure: { key: { count: number, expiresAt: epochMs } }
 const counters = {};
 
-export function setCache(type, data) {
+export function setCache(type, data, fetchedAt) {
   if (!caches[type]) throw new Error('Unknown cache type: ' + type);
   caches[type].data = data;
-  caches[type].fetchedAt = Date.now();
+  caches[type].fetchedAt = fetchedAt ?? Date.now();
 }
 
 export function getCache(type) {

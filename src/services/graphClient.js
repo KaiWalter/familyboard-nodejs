@@ -92,21 +92,22 @@ export const __test = { mapGraphError, graphRequestWithRetry, __setAudit };
 // Helper: fetch calendar events for given calendarId between start and end ISO datetimes with pagination
 export async function fetchCalendarView(calendarId, startISO, endISO) {
   const client = getGraphClient();
-  const path = `/me/calendars/${calendarId}/calendarView`;
+  const basePath = resolveCalendarPath(calendarId);
   const all = [];
   let nextLink;
-  const context = `calendar:${calendarId}`;
-  async function page(url) {
-    return client
-      .api(url || path)
-      .query({ startDateTime: startISO, endDateTime: endISO })
-      .select('id,subject,start,end,isAllDay')
-      .top(50)
-      .get();
-  }
+  const context = `calendar:${calendarId || 'primary'}`;
   try {
     do {
-      const resp = await graphRequestWithRetry(() => page(nextLink), context);
+      const request = client.api(nextLink || basePath);
+      request.header('Prefer', 'outlook.timezone="UTC"');
+      if (!nextLink) {
+        request
+          .query({ startDateTime: startISO, endDateTime: endISO })
+          .select('id,subject,start,end,isAllDay')
+          .orderby('start/dateTime')
+          .top(50);
+      }
+      const resp = await graphRequestWithRetry(() => request.get(), context);
       const events = Array.isArray(resp.value) ? resp.value : [];
       all.push(...events);
       nextLink = resp['@odata.nextLink'];
@@ -119,8 +120,6 @@ export async function fetchCalendarView(calendarId, startISO, endISO) {
     throw e;
   }
 }
-
-// Helper: list images in OneDrive folder (path) with pagination & retry
 export async function fetchPhotoItems(folderPath) {
   const client = getGraphClient();
   const basePath = `/me/drive/root:/${folderPath}:/children`;
@@ -180,4 +179,18 @@ export async function fetchPhotoItems(folderPath) {
     auditFn('graph.photos.fetch.error', { folderPath, message: e.message, name: e.name });
     throw e;
   }
+}
+
+function resolveCalendarPath(calendarId) {
+  if (!calendarId || calendarId === 'primary' || calendarId === 'default') {
+    return '/me/calendar/calendarView';
+  }
+  if (calendarId.startsWith('https://')) {
+    return calendarId;
+  }
+  if (calendarId.includes('/')) {
+    const normalized = calendarId.startsWith('/') ? calendarId : `/${calendarId}`;
+    return normalized.includes('/calendarView') ? normalized : `${normalized}/calendarView`;
+  }
+  return `/me/calendars/${calendarId}/calendarView`;
 }

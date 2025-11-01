@@ -93,9 +93,9 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
  - [X] T039a [US4] Implement one-time device code auth helper script `src/auth/authInit.js` (writes tokens.json)
  - [X] T041 [US4] Integrate token usage in calendarService & photoService (attach Authorization headers)
 		- [X] T041a [US4] Implement Graph client wrapper (`src/services/graphClient.js`) providing authenticated Microsoft Graph instance.
-	- [ ] T041b [US4] Refactor calendarService to use Graph SDK `client.api('/me/calendars/{id}/calendarView')` (batched or sequential) with selected date range.
+	- [X] T041b [US4] Refactor calendarService to use Graph SDK `client.api('/me/calendars/{id}/calendarView')` (batched or sequential) with selected date range.
 		- [X] T041c [US4] Refactor photoService to use Graph SDK to list OneDrive folder children and filter image MIME types.
-	- [ ] T041d [US4] Add error mapping & retry/backoff for Graph 429 / 5xx transient errors.
+	- [X] T041d [US4] Add error mapping & retry/backoff for Graph 429 / 5xx transient errors.
 	- [ ] T041e [US4] Add unit test for graphClient wrapper ensuring single initialization and token injection.
  - [X] T042 [US4] Update status route to include remainingMinutes calculation
  - [X] T043 [US4] Implement backoff logic in refreshScheduler.js (30s, 2m, 4m, etc.) up to 5 attempts

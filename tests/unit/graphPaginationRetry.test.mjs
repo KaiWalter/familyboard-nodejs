@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 import { fetchPhotoItems, fetchCalendarView, getGraphClient } from '../../src/services/graphClient.js';
-import { audit } from '../../src/util/log.js';
 
 // Basic smoke tests for pagination & retry logic by monkey-patching client.api().get()
 // NOTE: These tests are simplified and do not hit real Graph; they simulate nextLink chaining.
@@ -8,23 +7,32 @@ import { audit } from '../../src/util/log.js';
 function patchClientSequence(sequence) {
   const client = getGraphClient();
   let call = 0;
+  const paths = [];
   const origApi = client.api.bind(client);
   client.api = (path) => {
-    const builder = origApi(path);
-    const origGet = builder.get.bind(builder);
-    builder.get = async () => {
-      if (call >= sequence.length) return { value: [] };
-      const step = sequence[call++];
-      if (step.error) {
-        const err = new Error(step.error.message);
-        err.statusCode = step.error.code;
-        throw err;
+    paths.push(path);
+    return {
+      query() { return this; },
+      select() { return this; },
+      top() { return this; },
+      orderby() { return this; },
+      header() { return this; },
+      get: async () => {
+        if (call >= sequence.length) return { value: [] };
+        const step = sequence[call++];
+        if (step.error) {
+          const err = new Error(step.error.message);
+          err.statusCode = step.error.code;
+          throw err;
+        }
+        return step;
       }
-      return step;
     };
-    return builder;
   };
-  return () => { client.api = origApi; };
+  return () => {
+    client.api = origApi;
+    return paths;
+  };
 }
 
 async function testPhotoPagination() {
@@ -42,9 +50,10 @@ async function testCalendarRetry() {
     { error: { code: 429, message: 'TooManyRequests' } },
     { value: [{ id: 'e1', subject: 'Event', start: { dateTime: '2025-10-19T10:00:00' }, end: { dateTime: '2025-10-19T11:00:00' }, isAllDay: false }] }
   ]);
-  const events = await fetchCalendarView('cal1', '2025-10-19T00:00:00Z', '2025-10-20T00:00:00Z');
+  const events = await fetchCalendarView('primary', '2025-10-19T00:00:00Z', '2025-10-20T00:00:00Z');
   assert.equal(events.length, 1, 'should succeed after retry');
-  restore();
+  const paths = restore();
+  assert.equal(paths[0], '/me/calendar/calendarView', 'primary calendar uses canonical path');
 }
 
 (async () => {
