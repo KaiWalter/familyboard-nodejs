@@ -63,6 +63,8 @@
                 echo "warning: GEMINI_API_KEY missing from 1Password item 'Gemini API'" >&2
               fi
             fi
+
+            exec gemini
           '';
         };
       in {
