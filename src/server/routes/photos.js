@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getCache, setCache } from '../../services/cache.js';
-import { fetchPhotos } from '../../services/photoService.js';
+import { getCache, setCache, cacheAgeMs } from '../../services/cache.js';
+import { fetchPhotos, getPhotoCacheMaxAgeMs } from '../../services/photoService.js';
 import { getTokenMetadata } from '../../auth/msalToken.js';
 import { audit } from '../../util/log.js';
 
@@ -9,8 +9,13 @@ import { audit } from '../../util/log.js';
 const router = Router();
 
 router.get('/', async (req, res) => {
+  const force = ['1', 'true', 'force'].includes((req.query.force || '').toString().toLowerCase());
   const cached = getCache('photos');
-  if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) return res.json(cached.data);
+  const age = cacheAgeMs('photos');
+  const stale = typeof age === 'number' ? age > getPhotoCacheMaxAgeMs() : false;
+  if (!force && cached?.data && Array.isArray(cached.data) && cached.data.length > 0 && !stale) {
+    return res.json(cached.data);
+  }
   const meta = await getTokenMetadata();
   let photos;
   if (meta.status !== 'OK') {
@@ -18,7 +23,7 @@ router.get('/', async (req, res) => {
     return res.status(401).json({ error: 'UNAUTHENTICATED', photos: [] });
   }
   try {
-    photos = await fetchPhotos();
+  photos = await fetchPhotos({ force });
     if (!photos.length) {
       audit('photos.fetch.empty_folder', { reason: 'empty_graph', count: 0 });
       // Do not cache empty result; client will retry on next rotation or refresh

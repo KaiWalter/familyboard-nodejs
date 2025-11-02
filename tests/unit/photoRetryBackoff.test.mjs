@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { initPhotoPanelImmediate, _getRetryAttempts, _clearRetryTimer, _setPhotos } from '../../src/public/js/photoRotator.js';
+import { initPhotoPanelImmediate, _getRetryAttempts, _clearRetryTimer, _clearRefreshInterval, _setPhotos } from '../../src/public/js/photoRotator.js';
 
 // We cannot directly control internal schedule array, but we can let the natural schedule run with reduced delays by faking timers.
 
@@ -11,7 +11,7 @@ function stubApi() {
     if (url.endsWith('/api/status')) {
       return { ok: true, json: async () => ({ auth: { status: 'OK' } }) };
     }
-    if (url.endsWith('/api/photos')) {
+    if (url.includes('/api/photos')) {
       call++;
       if (call < 3) {
         return { ok: true, json: async () => [] };
@@ -44,4 +44,5 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   assert(img, 'image should appear after retries');
   assert(_getRetryAttempts() >= 1, 'at least one retry attempt should have occurred');
   _clearRetryTimer();
+  _clearRefreshInterval();
 })();

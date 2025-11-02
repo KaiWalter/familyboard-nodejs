@@ -2,13 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import { loadConfig } from '../config/store.js';
 import { fetchPhotoItems as fetchPhotoItemsDefault } from './graphClient.js';
-import { setCache, getCache } from './cache.js';
+import { setCache, getCache, cacheAgeMs } from './cache.js';
 import { audit } from '../util/log.js';
 
 const PHOTOS_CACHE_PATH_ENV = process.env.PHOTOS_CACHE_PATH;
 let photosCachePath = path.resolve(PHOTOS_CACHE_PATH_ENV || 'data/photos.json');
 let photosHydratedFromDisk = false;
 let fetchPhotoItemsFn = fetchPhotoItemsDefault;
+const PHOTO_CACHE_MAX_AGE_MS = Number(process.env.PHOTO_CACHE_MAX_AGE_MS || 15 * 60 * 1000);
 
 function ensureDirExists(filePath) {
   const dir = path.dirname(filePath);
@@ -47,11 +48,20 @@ function persistPhotosToDisk(photos, fetchedAtMs) {
   }
 }
 
-export async function fetchPhotos() {
+export function getPhotoCacheMaxAgeMs() {
+  return PHOTO_CACHE_MAX_AGE_MS;
+}
+
+export async function fetchPhotos(options = {}) {
+  const { force = false } = options;
   hydratePhotosFromDisk();
   const cached = getCache('photos');
+  const age = cacheAgeMs('photos');
+  const stale = typeof age === 'number' ? age > PHOTO_CACHE_MAX_AGE_MS : false;
   // Only reuse cache if it has non-empty data; empty array should not block re-fetch after auth or folder population
-  if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
+  if (!force && cached?.data && Array.isArray(cached.data) && cached.data.length > 0 && !stale) {
+    return cached.data;
+  }
   const cfg = loadConfig();
   const folder = cfg.photoFolderPath || '';
   if (!folder) {
@@ -62,7 +72,7 @@ export async function fetchPhotos() {
     return empty;
   }
   try {
-    const items = await fetchPhotoItemsFn(folder);
+  const items = await fetchPhotoItemsFn(folder);
     const fetchedAt = Date.now();
     setCache('photos', items, fetchedAt);
     persistPhotosToDisk(items, fetchedAt);

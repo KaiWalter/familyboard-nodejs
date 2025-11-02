@@ -4,17 +4,20 @@ let photos = [];
 let idx = 0;
 let intervalId;
 let retryTimerId;
+let refreshIntervalId;
 
 // Configurable retry parameters (exported for tests via underscored getters)
 const RETRY_SCHEDULE_MS = [1000, 2000, 4000, 8000, 16000]; // stop after ~31s
+const PHOTO_REFRESH_INTERVAL_MS = 12 * 60 * 1000; // 12 minutes keeps downloadUrl fresh before expiry
 let retryAttempts = 0;
 
 export function _getRetryAttempts() { return retryAttempts; }
 export function _clearRetryTimer() { if (retryTimerId) clearTimeout(retryTimerId); retryTimerId = undefined; }
 
-async function loadPhotos() {
+async function loadPhotos(force = false) {
   try {
-    photos = await apiGet('/api/photos');
+    const suffix = force ? '?force=1' : '';
+    photos = await apiGet(`/api/photos${suffix}`);
   } catch (e) {
     console.error('[photos] failed to load', e);
     photos = [];
@@ -33,6 +36,20 @@ export function _getIndex() { return idx; }
 export function _setPhotos(list) { photos = list; }
 export function _setIndex(i) { idx = i; }
 export function _clearInterval() { if (intervalId) clearInterval(intervalId); intervalId = undefined; }
+export function _clearRefreshInterval() { if (refreshIntervalId) clearInterval(refreshIntervalId); refreshIntervalId = undefined; }
+
+async function handleImageError(photoId) {
+  console.warn('[photos] image failed; refreshing list', { photoId });
+  await loadPhotos(true);
+  const authed = await isAuthenticated();
+  if (!photos.length) {
+    showCurrent(authed);
+    if (authed) scheduleRetry();
+    return;
+  }
+  idx = idx % photos.length;
+  showCurrent(authed);
+}
 
 function showCurrent(authenticated = true) {
   const panel = document.getElementById('photo-panel');
@@ -49,6 +66,7 @@ function showCurrent(authenticated = true) {
   img.src = p.url;
   img.alt = p.title || 'photo';
   img.className = 'photo ' + (p.orientation === 'portrait' ? 'photo-portrait' : 'photo-landscape'); // orientation classes retained for potential future logic; CSS now uses cover
+  img.addEventListener('error', () => { handleImageError(p.id).catch(err => console.error('[photos] refresh failed after image error', err)); }, { once: true });
   panel.appendChild(img);
 }
 
@@ -78,6 +96,7 @@ export async function initPhotoRotation() {
     next();
     if (!photos.length) showCurrent(a);
   }, seconds * 1000);
+  schedulePhotoRefresh();
 }
 
 // Immediately attempt to display first photo (if cache already has one or after quick fetch) without waiting for rotation setup.
@@ -88,12 +107,13 @@ export async function initPhotoPanelImmediate() {
   idx = 0;
   showCurrent(authed);
   if (authed && photos.length === 0) scheduleRetry();
+  schedulePhotoRefresh();
 }
 
 async function retryFetch() {
   const authed = await isAuthenticated();
   if (!authed) return; // stop retrying if user signed out
-  await loadPhotos();
+  await loadPhotos(true);
   if (photos.length > 0) {
     showCurrent(true);
     retryAttempts++; // count final success attempt
@@ -109,4 +129,22 @@ function scheduleRetry() {
   const delay = RETRY_SCHEDULE_MS[retryAttempts];
   _clearRetryTimer();
   retryTimerId = setTimeout(retryFetch, delay);
+}
+
+async function refreshPhotosTask() {
+  const authed = await isAuthenticated();
+  if (!authed) return;
+  await loadPhotos(true);
+  if (!photos.length) {
+    showCurrent(authed);
+    scheduleRetry();
+    return;
+  }
+  idx = idx % photos.length;
+  showCurrent(authed);
+}
+
+function schedulePhotoRefresh() {
+  if (refreshIntervalId) clearInterval(refreshIntervalId);
+  refreshIntervalId = setInterval(refreshPhotosTask, PHOTO_REFRESH_INTERVAL_MS);
 }
