@@ -28,8 +28,8 @@ If `.env` not used, export variables directly in shell.
 6. Subsequent launches reuse stored tokens automatically until refresh or revocation.
 7. POST `/signout` (or delete token file) to force re-authentication.
 
-## 4. Configuration File
-Create `data/config.json`:
+## 4. Configuration File (required)
+Create or edit `data/config.json` before launching the kiosk:
 ```json
 {
   "photoFolderPath": "Pictures/FamilyBoard",
@@ -38,8 +38,7 @@ Create `data/config.json`:
     "locale": "en-US",
     "timezone": "Europe/Berlin"
   },
-  "layout": {"goldenRatioEnabled": true, "ratio": 1.618},
-  "rotation": {"intervalSeconds": 90}
+  "layout": {"goldenRatioEnabled": true, "ratio": 1.618}
 }
 ```
 
@@ -57,7 +56,7 @@ Server listens on `$PORT` (default 3000). Static UI served at `/`.
 ## 7. Launch Kiosk Browser
 Chromium example:
 ```bash
-chromium --kiosk --app=http://localhost:3000 --disable-pinch --overscroll-history-navigation=0
+chromium --kiosk --app=http://localhost:3000/signin --disable-pinch --overscroll-history-navigation=0
 ```
 
 ## 8. Verification Steps
@@ -78,7 +77,7 @@ chromium --kiosk --app=http://localhost:3000 --disable-pinch --overscroll-histor
 - Browser kiosk can be exited with Alt+F4 (depends on window manager).
 
 ## 11. Updating Config
-Send PUT to `/api/config` or edit `data/config.json` then restart server (hot reload optional later).
+Edit `data/config.json` and restart the server (or trigger a reload) to pick up changes. The kiosk UI intentionally ships without a runtime configuration form; keep adjustments in version-controlled config files or scripted admin tools.
 
 ## 12. Minimal Testing
 Manual smoke:

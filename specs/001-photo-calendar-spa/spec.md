@@ -262,10 +262,10 @@ No additional specification text required beyond these cross-references; this su
 ### Measurable Outcomes
 
 - **SC-001**: Calendar view renders initial 21-day range within 2 seconds on first load (normal connection).
-- **SC-002**: Photo rotation advances automatically at configured interval with ≥95% timing accuracy over 10 minutes.
+- **SC-002**: Photo rotation advances automatically at configured interval with ≥95% timing accuracy over a 30-minute observation window.
 - **SC-003**: Users can configure and persist settings (folder, calendars, ratio) in under 1 minute.
 - **SC-004**: App handles offline or API error scenarios by showing fallback content without crashing 100% of tested cases.
-- **SC-005**: Photo rotation advances precisely every 90s with ≥95% timing accuracy over a 30-minute observation.
+- **SC-005**: Photo pane replaces its placeholder with the first available image within 1 second of app initialization (cold start) in ≥95% of sampled runs.
 - **SC-006**: Layout ratio accuracy: calendar pane width within ±5% of 1.618× photo pane width when enabled.
 - **SC-007**: App starts and authenticates using stored tokens with zero interactive steps in ≥99% of cold starts after initial setup.
 - **SC-008**: Token refresh succeeds before expiry in ≥95% of attempts under stable network conditions.

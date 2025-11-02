@@ -10,6 +10,13 @@ function startServer() {
   });
 }
 
+async function stopServer(server) {
+  if (!server) return;
+  await new Promise(resolve => {
+    server.close(() => resolve());
+  });
+}
+
 test('signin with forceConsent adds prompt=consent', async () => {
   process.env.NODE_ENV = 'test';
   process.env.AUTH_CLIENT_ID = 'client';
@@ -22,5 +29,7 @@ test('signin with forceConsent adds prompt=consent', async () => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.match(body.authorizationUrl, /[?&]prompt=consent/);
-  } finally { server.close(); }
+  } finally {
+    await stopServer(server);
+  }
 });

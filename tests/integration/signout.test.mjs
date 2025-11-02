@@ -15,6 +15,13 @@ async function startServer() {
 	});
 }
 
+async function stopServer(server) {
+	if (!server) return;
+	await new Promise(resolve => {
+		server.close(() => resolve());
+	});
+}
+
 test('signout clears persisted tokens', async () => {
 	process.env.NODE_ENV = 'test';
 	process.env.AUTH_CLIENT_ID = 'client';
@@ -48,6 +55,6 @@ test('signout clears persisted tokens', async () => {
 	} finally {
 		PublicClientApplication.prototype.acquireTokenByCode = originalAcquirePublic;
 		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireConfidential;
-		server.close();
+		await stopServer(server);
 	}
 });

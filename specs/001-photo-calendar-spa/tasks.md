@@ -73,14 +73,14 @@ Independent Test: With photo config, images cycle every 90s; landscape letterbox
  - [ ] T032b [US2] Rename config key from oneDriveFolderId to photoFolderPath across spec/data-model/quickstart/openapi and add default in store.js.
 
 ### Phase 5: User Story 3 – Configuration & Ratio (P3)
-Goal: Persist settings, apply golden ratio layout.
-Independent Test: Change calendar IDs & ratio -> reload shows updated calendar sources & layout width ratio within ±5%.
+Goal: Persist settings via file edits, apply golden ratio layout.
+Independent Test: Adjust calendar IDs & ratio in `data/config.json` -> reload shows updated calendar sources & layout width ratio within ±5%.
 
  - [X] T033 [US3] Implement ratio calculation utility `src/util/ratio.js`
  - [X] T034 [P] [US3] Add layout application logic in `public/js/layout.js` adjusting widths
- - [X] T035 [US3] Implement configuration UI section in `public/index.html` (simple form: folder path, calendar IDs, golden ratio toggle) + `public/js/configForm.js` (rotation interval omitted; fixed at 90s)
+ - [X] T035 [US3] Remove configuration form markup/scripts from `public/index.html` and delete `public/js/configForm.js` so kiosk mode remains display-only
  - [X] T035a [P] [US3] Implement weekday abbreviation override application logic in `public/js/calendarView.js`
- - [X] T036 [US3] Hook form save to PUT /api/config and reload calendar/photo modules
+ - [X] T036 [US3] Update documentation (README, quickstart) and front-end bootstrapping notes to reflect file-based configuration with no runtime form
  - [X] T037 [US3] Validate calendarIds length and locale/timezone on save using config/store.js
  - [X] T038 [US3] Add test `tests/unit/ratio.test.mjs` verifying width calculation tolerance
 
@@ -110,18 +110,18 @@ Final refinements, accessibility, performance, resilience.
  - [X] T046 Add accessibility improvements (aria labels on cells, verify contrast ≥4.5:1, CSS audit) in styles.css
  - [X] T046a Add continuation-day visual indicator for multi-day all-day events in `public/js/calendarView.js` (e.g., subtle ellipsis or arrow) 
  - [X] T046b Implement cached fallback logic in `src/services/calendarService.js` & `src/services/photoService.js` (serve cached JSON on fetch error) 
+- [X] T046c Ensure kiosk fullscreen styling enforces viewport fill and hides scrollbars (FR-012f)
  - [X] T047 Add offline detection banner logic `public/js/offlineBanner.js`
  - [X] T048 Add logging wrapper `src/util/log.js` (still console but structured prefix)
  - [X] T049 Add DST boundary test `tests/unit/dstBoundary.test.mjs`
  - [X] T050 Document security guidance in README (token file permissions)
 	- [ ] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
-	- [X] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
 	- [ ] T052 Add test (jsdom or integration) ensuring immediate first photo display before rotation interval elapses
 	- [ ] T053 Distinguish placeholders in photo panel: unauthenticated ("Sign in required") vs empty folder ("No photos found") visual/text test
 	- [ ] T054 Add favicon presence assertion (public/index.html includes link rel="icon")
 	- [X] T055 Add test ensuring month abbreviation appears on all day-of-month=1 cells within 21-day span
 	- [X] T056 Add test verifying golden ratio width tolerance ±5% when enabled (reuse ratio.test or extend)
-	- [ ] T057 Add test verifying no vertical/horizontal scrollbars in 1080p viewport simulation (CSS overflow hidden)
+	- [ ] T057 Add automated test verifying no vertical/horizontal scrollbars in 1080p viewport simulation (FR-012f overflow compliance)
 	- [ ] T058 Add test verifying orientation classes applied (.portrait/.landscape) based on metadata width/height
 	- [ ] T059 Add test verifying offline banner does not alter panel width ratio (snapshot before/after offline simulation)
 

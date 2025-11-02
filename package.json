@@ -6,7 +6,7 @@
   "description": "Family Board Photo & Calendar kiosk SPA",
   "scripts": {
     "start": "node src/server/index.js",
-    "test": "NODE_ENV=test node --test"
+    "test": "NODE_ENV=test node --test --test-force-exit"
   },
   "author": "Kai Walter",
   "license": "MIT",
@@ -17,6 +17,7 @@
     "@microsoft/microsoft-graph-client": "^3.0.0"
   },
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "jsdom": "^24.0.0",
+    "undici": "^6.19.6"
   }
 }

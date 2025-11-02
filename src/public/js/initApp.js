@@ -1,3 +1,4 @@
+// Kiosk boot entrypoint: reads immutable config (no runtime form) and starts display modules.
 import { apiGet } from './apiClient.js';
 import { initCalendar } from './calendarView.js';
 import { initPhotoRotation, initPhotoPanelImmediate } from './photoRotator.js';

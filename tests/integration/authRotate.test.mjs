@@ -33,6 +33,13 @@ async function startServer() {
   });
 }
 
+async function stopServer(server) {
+  if (!server) return;
+  await new Promise(resolve => {
+    server.close(() => resolve());
+  });
+}
+
 test('manual rotate fails with 400 when no accounts', async () => {
   const envSnapshot = snapshotAuthEnv();
   process.env.NODE_ENV = 'test';
@@ -51,7 +58,7 @@ test('manual rotate fails with 400 when no accounts', async () => {
     assert.equal(body.error, 'no_user_session');
   } finally {
     restoreAuthEnv(envSnapshot);
-    server.close();
+    await stopServer(server);
   }
 });
 
@@ -83,7 +90,7 @@ test('manual rotate succeeds under TEST_MODE', async () => {
   } finally {
     PublicClientApplication.prototype.acquireTokenByCode = originalPublic;
     ConfidentialClientApplication.prototype.acquireTokenByCode = originalConfidential;
-    server.close();
+    await stopServer(server);
     delete process.env.AUTH_TEST_MODE;
     restoreAuthEnv(envSnapshot);
   }

@@ -15,6 +15,13 @@ async function startServer() {
 	});
 }
 
+async function stopServer(server) {
+	if (!server) return;
+	await new Promise(resolve => {
+		server.close(() => resolve());
+	});
+}
+
 test('callback rejects invalid state', async () => {
 	process.env.NODE_ENV = 'test';
 	process.env.AUTH_CLIENT_ID = 'client';
@@ -36,7 +43,7 @@ test('callback rejects invalid state', async () => {
 	} finally {
 		PublicClientApplication.prototype.acquireTokenByCode = originalAcquireInvalidPublic;
 		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireInvalidConfidential;
-		server.close();
+		await stopServer(server);
 	}
 });
 
@@ -72,6 +79,6 @@ test('callback accepts valid state, persists tokens, and redirects to root', asy
 	} finally {
 		PublicClientApplication.prototype.acquireTokenByCode = originalAcquireValidPublic;
 		ConfidentialClientApplication.prototype.acquireTokenByCode = originalAcquireValidConfidential;
-		server.close();
+		await stopServer(server);
 	}
 });

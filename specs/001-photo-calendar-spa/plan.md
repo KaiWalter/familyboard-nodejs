@@ -5,7 +5,7 @@ ios/ or android/
 **Input**: Single feature specification (`specs/001-photo-calendar-spa/spec.md`)
 
 ## Summary
-Deliver a kiosk-style single-page application that displays a continuously updated 21-day family calendar alongside a rotating photo panel (90s interval) with golden-ratio layout option. Add secure confidential authorization code sign-in (/signin → provider → /callback) with token persistence, proactive refresh, auditing, rate limiting, and sign-out. Non-goals: multi-user roles, at-rest encryption, push/webhook updates.
+Deliver a kiosk-style single-page application that displays a continuously updated 21-day family calendar alongside a rotating photo panel (90s interval) with golden-ratio layout option. Configuration updates stay file-based (edit `data/config.json`), intentionally omitting any runtime configuration UI for kiosk stability. Add secure confidential authorization code sign-in (/signin → provider → /callback) with token persistence, proactive refresh, auditing, rate limiting, and sign-out. Non-goals: multi-user roles, at-rest encryption, push/webhook updates.
 
 ## Technical Context
 **Language/Version**: Node.js 20 (ES modules)
@@ -123,12 +123,14 @@ tests/
 2. Add caching fallback persistence (`events.json`).
 3. Photo orientation fallback and graceful empty folder messaging improvements.
 4. Layout golden ratio enforcement with ±5% tolerance test.
+5. Remove the deprecated configuration form from public assets so kiosk mode relies solely on file-based settings.
 
 ### Phase 4 – Hardening & Quality
 1. Rate limit tests (signin flood, state mismatch attempts).
 2. Security tests: invalid state, replayed code, revoked refresh simulation.
 3. Accessibility pass: contrast & current-day identification test.
 4. Performance micro-bench (time event transform <50ms for 21 days of typical event volume).
+5. Enforce kiosk fullscreen styling (viewport fill, no scrollbars) and back it with automated viewport overflow tests (FR-012f).
 
 ### Phase 5 – Documentation & Polishing
 1. README auth section sync with quickstart.

@@ -10,6 +10,13 @@ function startServer() {
   });
 }
 
+async function stopServer(server) {
+  if (!server) return;
+  await new Promise(resolve => {
+    server.close(() => resolve());
+  });
+}
+
 // Verify no implicit offline_access scope is added when it is not configured.
 
 test('signin authorizationUrl reflects configured scopes only (no implicit offline_access)', async () => {
@@ -25,6 +32,6 @@ test('signin authorizationUrl reflects configured scopes only (no implicit offli
     const body = await res.json();
     assert.ok(/scope=User.Read(?!.*offline_access)/.test(body.authorizationUrl), 'authorizationUrl should not add offline_access implicitly');
   } finally {
-    server.close();
+    await stopServer(server);
   }
 });

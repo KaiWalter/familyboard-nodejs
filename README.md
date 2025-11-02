@@ -27,9 +27,14 @@ The application will return `401 not_authenticated` for protected resources unti
 ## Configuration
 All runtime configuration is file-based via `data/config.json` (no in-app configuration panel). On startup the SPA reads this file once and initializes layout (golden ratio, calendar IDs, photo folder path) and begins immediate photo rotation.
 
-`data/config.json` example (delegated scopes + layout + rotation):
+`data/config.json` example (delegated scopes + layout):
 ```jsonc
 {
+	"calendarIds": ["primary"],
+	"photoFolderPath": "Pictures/FamilyBoard",
+	"locale": "en-US",
+	"timezone": "UTC",
+	"goldenRatio": true,
 	"auth": {
 		"clientId": "<app-client-id>",
 		"clientSecret": "<client-secret>",
@@ -47,8 +52,8 @@ Current (obfuscated) working sample:
 	"locale": "en-US",
 	"timezone": "UTC",
 	"goldenRatio": true,
-		"auth": {
-			"clientId": "..........client id..........",
+	"auth": {
+		"clientId": "..........client id..........",
 		"clientSecret": "..........client secret..........",
 		"redirectUri": "http://localhost:3000/callback",
 		"scopes": ["User.Read", "Calendars.Read", "Files.Read.All"],
@@ -62,9 +67,9 @@ Notes:
 - Using `Files.Read.All` (admin consent may be required); switch to `Files.Read` if least privilege suffices.
 - Leading slash on `photoFolderPath` accepted; normalized internally.
 Additional settings:
+- Edit the file directly and redeploy/restart; the kiosk UI does not expose an interactive configuration form.
 - `photoFolderPath`: Path under user drive root (`Pictures/FamilyBoard`).
 - `goldenRatio`: Boolean to enable calendar:photo width ≈ 1.618:1 pixel ratio.
-- `photoRotationSeconds`: Rotation interval (default 90). Must be ≥5 to take effect.
 
 Required delegated scopes for full functionality (calendar + photos):
 - `User.Read` (baseline profile)
