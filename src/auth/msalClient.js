@@ -16,36 +16,47 @@ const cachePlugin = {
   }
 };
 
-const cfg = loadConfig();
-const tenant = process.env.AUTH_TENANT || cfg.auth?.tenant || process.env.MSAL_TENANT_ID || 'common';
-const clientId = process.env.MSAL_CLIENT_ID || cfg.auth?.clientId || 'REPLACE_CLIENT_ID';
-const clientSecret = process.env.AUTH_CLIENT_SECRET || cfg.auth?.clientSecret;
-const isTestMode = process.env.AUTH_TEST_MODE === '1' || process.env.NODE_ENV === 'test';
+function createMsalClient() {
+  const cfg = loadConfig();
+  const tenant = process.env.AUTH_TENANT || cfg.auth?.tenant || process.env.MSAL_TENANT_ID || 'common';
+  const clientId = process.env.MSAL_CLIENT_ID || cfg.auth?.clientId || 'REPLACE_CLIENT_ID';
+  const clientSecret = process.env.AUTH_CLIENT_SECRET || cfg.auth?.clientSecret;
+  const isTestMode = process.env.AUTH_TEST_MODE === '1' || process.env.NODE_ENV === 'test';
 
-let msalClient;
-if (!clientSecret || isTestMode) {
-  const publicConfig = {
-    auth: { clientId, authority: `https://login.microsoftonline.com/${tenant}` },
-    system: { loggerOptions: { loggerCallback() {}, piiLoggingEnabled: false, logLevel: 2 } },
-    cache: { cachePlugin }
-  };
-  msalClient = new PublicClientApplication(publicConfig);
-  audit('auth.client.type', { type: 'public', tenant, hasSecret: !!clientSecret });
-} else {
+  if (!clientSecret || isTestMode) {
+    const publicConfig = {
+      auth: { clientId, authority: `https://login.microsoftonline.com/${tenant}` },
+      system: { loggerOptions: { loggerCallback() {}, piiLoggingEnabled: false, logLevel: 2 } },
+      cache: { cachePlugin }
+    };
+    audit('auth.client.type', { type: 'public', tenant, hasSecret: !!clientSecret });
+    return new PublicClientApplication(publicConfig);
+  }
+
   const confidentialConfig = {
     auth: { clientId, clientSecret, authority: `https://login.microsoftonline.com/${tenant}` },
     system: { loggerOptions: { loggerCallback() {}, piiLoggingEnabled: false, logLevel: 2 } },
     cache: { cachePlugin }
   };
-  msalClient = new ConfidentialClientApplication(confidentialConfig);
   audit('auth.client.type', { type: 'confidential', tenant });
+  return new ConfidentialClientApplication(confidentialConfig);
 }
 
-  // Named export for modules that import { msalClient }
-  export { msalClient };
+let msalClient = createMsalClient();
+
+// Named export for modules that import { msalClient }
+export { msalClient };
 
 // Backwards-compatible loader used by routes needing direct client handle
 export function loadMsalClient() {
+  return msalClient;
+}
+
+export function __resetMsalClientForTests() {
+  if (process.env.NODE_ENV !== 'test') {
+    return msalClient;
+  }
+  msalClient = createMsalClient();
   return msalClient;
 }
 

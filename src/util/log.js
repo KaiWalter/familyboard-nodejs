@@ -14,11 +14,14 @@ export const error = (msg, meta) => log('ERROR', msg, meta);
 
 import fs from 'fs';
 let auditStream = null;
+
 function getAuditStream() {
+  if (process.env.NODE_ENV === 'test' && !process.env.AUDIT_FILE) return null;
   if (auditStream) return auditStream;
   try {
     const filePath = process.env.AUDIT_FILE || 'data/audit.log';
     auditStream = fs.createWriteStream(filePath, { flags: 'a' });
+    auditStream.on('error', () => {});
   } catch (e) {
     auditStream = null;
   }
@@ -35,5 +38,14 @@ export function audit(event, details = {}) {
     }
   } catch (e) {
     // swallow file write errors
+  }
+}
+
+export function __closeAuditStreamForTests() {
+  if (auditStream) {
+    try {
+      auditStream.end();
+    } catch {}
+    auditStream = null;
   }
 }

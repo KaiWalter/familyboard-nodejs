@@ -35,8 +35,9 @@ export function renderGrid(days, cfg) {
   grid.style.display = 'grid';
   // Add an extra first column for week numbers (row headers): 1 narrow + 7 day columns
   grid.style.gridTemplateColumns = 'minmax(2.2rem, 2.5rem) repeat(7, 1fr)';
-  grid.style.gridAutoRows = '1fr';
+  grid.style.gridTemplateRows = 'auto repeat(3, 1fr)';
   grid.style.gap = '4px';
+  grid.style.height = '100%';
 
   // Top-left corner (blank cell placeholder for column of week numbers)
   const corner = document.createElement('div');
@@ -67,8 +68,6 @@ export function renderGrid(days, cfg) {
       const dt = days[idx];
       const cell = document.createElement('div');
       cell.className = 'cell';
-      cell.style.border = '1px solid var(--border)';
-      cell.style.padding = '2px';
       if (dt.toISODate() === todayIso) {
         cell.classList.add('current-day');
       }

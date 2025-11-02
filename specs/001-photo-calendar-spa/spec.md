@@ -159,6 +159,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-018**: System MUST provide a simple status indicator (internal or console) for auth state: OK, Refreshing, Warning, Error.
 - **FR-018a**: System MUST refresh calendar data automatically every 180 seconds while running (in addition to midnight rollover) without user interaction.
 - **FR-019**: System MUST display calendar as 3 horizontal week rows × 7 weekday columns (Mon–Sun) per row.
+- **FR-019a**: Calendar grid MUST stretch the three week rows to occupy all available calendar panel height beneath the weekday header row, maintaining even row heights without introducing scrollbars.
 - **FR-020**: System MUST label weekday columns with two-letter localized abbreviations per configured locale.
 - **FR-021**: System MUST label each week row with its ISO week number.
 - **FR-022**: System MUST render each day cell with numeric day-of-month as a header element.
@@ -177,6 +178,7 @@ An operator (or authorized user) initiates a confidential sign-in flow via a pub
 - **FR-035**: System MUST correctly handle daylight saving transitions when converting UTC (events show correct local times pre/post shift).
 - **FR-036**: System MUST provide CSS class hooks: `.row-header`, `.column-header`, `.cell-header`, `.event`, `.current-day` for respective elements.
 - **FR-037**: System MUST highlight the current day cell with a visually distinct border (e.g., thicker or contrasting monochrome) while retaining monochrome scheme.
+- **FR-037a**: Non-current day cells MUST render without surrounding borders so the grid relies on spacing to delineate days, keeping only the current day outline for emphasis.
 - **FR-038**: System MUST implement a monochrome (black/white/grayscale) color palette avoiding saturated colors for calendar structural elements and events.
 - **FR-039**: System SHOULD ensure text/background contrast meets an accessibility baseline (assumption: contrast ratio ≥4.5:1 for primary text) without specifying implementation details.
 
@@ -214,6 +216,8 @@ No critical ambiguities require clarification beyond reasonable defaults; no NEE
 - Calendar Month Indicators: Month abbreviation appears inline with each day header where day-of-month=1 plus first Monday cell.
 - Current Day Highlight: Border thickness difference (≥2px) with monochrome contrast.
 - Scroll Behavior: Entire body and panels MUST prevent scrollbars under typical viewport sizes (1080p reference); overflow hidden.
+- Calendar Vertical Fill: Calendar panel uses a stretch layout where the weekday header row consumes natural height and the three week rows expand evenly to fill the remaining vertical space.
+- All-Day Styling: All-day events use inverted monochrome styling (black text on white rounded rectangles with subtle padding) to distinguish them from timed events.
 - Favicon: Minimal SVG favicon present to prevent default browser blank icon and match kiosk polish.
 
 #### Layout Verification Mapping

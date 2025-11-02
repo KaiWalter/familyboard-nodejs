@@ -15,15 +15,6 @@ function setupDom() {
   return dom;
 }
 
-// Mock apiGet used inside calendarView.js
-const eventsMock = [
-  // unsorted intentionally: timed earlier comes after later, all-day mixed
-  { subject: 'Zebra AllDay', isAllDay: true, start: '2025-10-19T00:00:00.000Z', end: '2025-10-19T23:59:59.000Z' },
-  { subject: 'Alpha AllDay', isAllDay: true, start: '2025-10-19T00:00:00.000Z', end: '2025-10-19T23:59:59.000Z' },
-  { subject: 'Later Meeting', isAllDay: false, start: '2025-10-19T15:00:00.000Z', end: '2025-10-19T16:00:00.000Z' },
-  { subject: 'Earlier Meeting', isAllDay: false, start: '2025-10-19T08:00:00.000Z', end: '2025-10-19T09:00:00.000Z' }
-];
-
 let apiGetCalls = [];
 function mockApiGet(path) {
   apiGetCalls.push(path);
@@ -47,14 +38,23 @@ globalThis.apiGet = mockApiGet; // calendarView uses named import though; cannot
 
 // Instead: create a proxy module via dynamic import with data URL (skipped for brevity). For now we test renderGrid & attachEvents directly.
 
-import { DateTime } from 'luxon';
-
 await test('week numbers, month abbreviations, event sorting', async () => {
   setupDom();
   const { dayRange21, renderGrid, attachEvents } = await loadModule();
   const tz = 'UTC';
   const days = dayRange21(tz);
   renderGrid(days, { timezone: tz, locale: 'en-US', weekdayAbbrevOverride: {} });
+
+  const targetDay = days[7];
+  const targetDateIso = targetDay.toISODate();
+  const baseStart = targetDay.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+  // unsorted intentionally: timed earlier comes after later, all-day mixed
+  const eventsMock = [
+    { subject: 'Zebra AllDay', isAllDay: true, start: baseStart.toUTC().toISO(), end: baseStart.endOf('day').toUTC().toISO() },
+    { subject: 'Alpha AllDay', isAllDay: true, start: baseStart.toUTC().toISO(), end: baseStart.endOf('day').toUTC().toISO() },
+    { subject: 'Later Meeting', isAllDay: false, start: baseStart.plus({ hours: 15 }).toUTC().toISO(), end: baseStart.plus({ hours: 16 }).toUTC().toISO() },
+    { subject: 'Earlier Meeting', isAllDay: false, start: baseStart.plus({ hours: 8 }).toUTC().toISO(), end: baseStart.plus({ hours: 9 }).toUTC().toISO() }
+  ];
 
   // Check week number headers (3 rows)
   const weekHeaders = [...document.querySelectorAll('.row-header')];
@@ -69,9 +69,8 @@ await test('week numbers, month abbreviations, event sorting', async () => {
   dom1Headers.forEach(h => assert.ok(/1 [A-Za-z]{3}/.test(h.textContent), 'day-of-month=1 header includes month abbreviation'));
 
   // Attach events and verify ordering within target date cell
-  const targetDate = DateTime.fromISO(eventsMock[0].start).toISODate();
   attachEvents(eventsMock, tz);
-  const cell = document.querySelector(`.cell[data-date="${targetDate}"]`);
+  const cell = document.querySelector(`.cell[data-date="${targetDateIso}"]`);
   const eventDivs = [...cell.querySelectorAll('.event')];
   const texts = eventDivs.map(d => d.textContent);
   // Expected order: Alpha AllDay, Zebra AllDay, Earlier Meeting, Later Meeting
