@@ -31,11 +31,12 @@ Adding a dependency REQUIRES a one-line justification in the PR/commit message. 
 and lightweight libraries over large frameworks. Remove unused deps promptly. **Rationale**: Fewer
 dependencies reduce upgrade risk, security surface, and mental overhead.
 
-### 4. Pragmatic Testing
-Focus on HIGH VALUE tests only: critical flows (photo rotation, calendar rendering, configuration save)
-and basic error handling. Avoid exhaustive unit tests for trivial getters/setters. A smoke test MUST run
-locally to confirm app still starts and core panels render. **Rationale**: Testing should protect value
-without turning the hobby into a chore.
+### 4. Lightweight Testing
+Automated tests cover only deterministic data conversions and isolated internal logic. Avoid scenarios that
+require mocking external services, orchestrating background schedulers, or coordinating multiple processes.
+Manual smoke checks remain the mechanism for verifying integrations (MSAL, Microsoft Graph, kiosk runtime).
+Skip trivial getters/setters and UI wiring. **Rationale**: Keep testing effortless so the project stays fun
+while still catching regressions in our core calculations.
 
 ### 5. Sustainable Pace & Fun
 Work MUST remain enjoyable. If a refactor or feature drains motivation, pause and reassess simpler

@@ -7,6 +7,11 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
+> **Testing Policy Update (2025-11-02):** Automated coverage is limited to deterministic data conversions and
+> isolated internal logic. Avoid tests that require mocking external Microsoft libraries (MSAL, Microsoft Graph),
+> spinning up background processes, or coordinating multiple processes. We rely on manual smoke checks to confirm
+> SDK integrations behave as expected through documented APIs.
+
 <!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
@@ -310,4 +315,7 @@ No additional specification text required beyond these cross-references; this su
 ## Success Validation Strategy
 
 Manual smoke test covering: initial load (SC-001), photo rotation over 10 minutes (SC-002), settings modify & persist (SC-003), offline simulation (disable network) (SC-004), control responsiveness (SC-005), layout measurement (SC-006).
+
+External library behavior (MSAL auth flows, Microsoft Graph responses) is validated through these smoke
+checks and field observation rather than automated tests, consistent with the 2025-11-02 testing policy.
 

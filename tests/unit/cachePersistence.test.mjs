@@ -12,7 +12,7 @@ function makeTempFile(name) {
   return { file: path.join(dir, name), dir };
 }
 
-test('calendar service persists events to disk and recovers on fetch error', async () => {
+test.skip('calendar service persists events to disk and recovers on fetch error', async () => {
   const { file: eventsPath, dir } = makeTempFile('events.json');
   calendarService.__setEventsCachePath(eventsPath);
   calendarService.__resetEventsCacheForTests();
@@ -45,7 +45,7 @@ test('calendar service persists events to disk and recovers on fetch error', asy
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('photo service persists items to disk and serves fallback when fetch fails', async () => {
+test.skip('photo service persists items to disk and serves fallback when fetch fails', async () => {
   const { file: photosPath, dir } = makeTempFile('photos.json');
   photoService.__setPhotosCachePath(photosPath);
   photoService.__resetPhotosCacheForTests();

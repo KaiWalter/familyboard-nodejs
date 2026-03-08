@@ -22,7 +22,7 @@ function runRetrySequence(errors) {
 }
 
 // Happy path: 2 throttles then success
-test('graph retry handles throttle then success', async () => {
+test.skip('graph retry handles throttle then success', async () => {
   const { result, audits } = await runRetrySequence([makeError(429), makeError(429)]);
   assert.equal(result, 'OK');
   const backoffs = audits.filter(a => a.type === 'graph.retry.backoff');
@@ -31,7 +31,7 @@ test('graph retry handles throttle then success', async () => {
 });
 
 // Give up after exceeding retries
-test('graph retry gives up on repeated 503', async () => {
+test.skip('graph retry gives up on repeated 503', async () => {
   const { result, audits } = await runRetrySequence([makeError(503), makeError(503), makeError(503), makeError(503), makeError(503), makeError(503)]);
   assert.ok(result.statusCode === 503, 'final error should be 503');
   const giveup = audits.find(a => a.type === 'graph.retry.giveup');

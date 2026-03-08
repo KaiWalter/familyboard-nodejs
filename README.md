@@ -147,12 +147,12 @@ curl -X POST http://localhost:3000/signout
 ```
 
 ## Testing
-Run full suite:
+Run deterministic logic tests:
 ```
 npm test
 ```
-Integration tests cover state validation, scope handling without implicit offline_access injection, manual rotate, signout clearing, and error paths (invalid state, scope issues).
-Unit tests include pagination/retry logic, golden ratio width tolerance, immediate photo display, placeholder distinction (unauthenticated vs empty folder), and month abbreviation rendering.
+Only data conversion helpers and isolated internal logic are covered automatically. Manual smoke checks
+validate MSAL/Graph integrations, background schedulers, and multi-process scenarios.
 
 Troubleshooting token format:
 - If audit shows `photos.fetch.invalid_token` or `graph.retry.giveup` with code 401 and message referencing `IDX14100: JWT is not well formed`, delete `data/tokens.json` and re-run `/signin` ensuring you complete interactive consent. Token must contain three base64url segments separated by two dots.

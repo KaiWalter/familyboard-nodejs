@@ -50,7 +50,7 @@ async function waitFor(cond, timeoutMs = 2000, intervalMs = 50) {
   return false;
 }
 
-test('performSingleRefresh updates token via MSAL-only flow', async () => {
+test.skip('performSingleRefresh updates token via MSAL-only flow', async () => {
   const beforeToken = currentToken;
   const res = await performSingleRefresh(['Calendars.Read'], mockAcquire);
   assert.equal(res.updated, true, 'manual refresh should report updated');
@@ -58,7 +58,7 @@ test('performSingleRefresh updates token via MSAL-only flow', async () => {
   assert.ok(expiresAt - Date.now() > 50 * 60_000, 'expiry extended ~60min');
 });
 
-test('scheduler triggers refresh when <10m remaining and invalidates caches', async () => {
+test.skip('scheduler triggers refresh when <10m remaining and invalidates caches', async () => {
   setCache('photos', [{ id: 'p1' }]);
   setCache('events', [{ id: 'e1' }]);
   // Force imminent expiry

@@ -23,26 +23,26 @@ MVP Scope: Complete US1 (Calendar Panel) with hardcoded placeholder events or si
 ### Phase 1: Setup
 Foundation for repository to host code & assets.
 
-- [ ] T001 Create `src/` directory skeleton (server/, services/, auth/, config/, util/, public/) paths
-- [ ] T002 Initialize minimal `package.json` with name, scripts (start), and dependencies list
-- [ ] T003 Add `.gitignore` entries for `data/*.json` sensitive token storage
-- [ ] T004 Create `data/` directory with placeholder `config.json` and `.keep` file
-- [ ] T005 Create `public/index.html` base layout container (calendar div, photo div)
-- [ ] T006 [P] Add `public/css/styles.css` with monochrome base variables and reset
-- [ ] T007 [P] Add `public/js/apiClient.js` with fetch wrapper (using global fetch)
-- [ ] T008 Add README stub referencing quickstart.md
+- [X] T001 Create `src/` directory skeleton (server/, services/, auth/, config/, util/, public/) paths
+- [X] T002 Initialize minimal `package.json` with name, scripts (start), and dependencies list
+- [X] T003 Add `.gitignore` entries for `data/*.json` sensitive token storage
+- [X] T004 Create `data/` directory with placeholder `config.json` and `.keep` file
+- [X] T005 Create `public/index.html` base layout container (calendar div, photo div)
+- [X] T006 [P] Add `public/css/styles.css` with monochrome base variables and reset
+- [X] T007 [P] Add `public/js/apiClient.js` with fetch wrapper (using global fetch)
+- [X] T008 Add README stub referencing quickstart.md
 
 ### Phase 2: Foundational
 Core utilities and shared modules before user stories.
 
-- [ ] T009 Implement `src/util/timezone.js` Luxon helper (toLocal, formatEventRange, getWeekNumber)
-- [ ] T010 Implement `src/config/store.js` for loading/saving `data/config.json` (validation per data-model)
-- [ ] T011 Implement `src/auth/tokenStore.js` read/write `data/tokens.json` atomic write
-- [ ] T012 [P] Implement `src/services/eventTransform.js` (expansion of multi-day all-day events, ordering)
-- [ ] T013 [P] Implement `src/services/cache.js` for events/photos JSON caching layer
-- [ ] T014 Implement `src/server/app.js` Express initialization (static serve + JSON body parsing)
-- [ ] T015 Implement `src/server/routes/config.js` GET/PUT /api/config (validation reuse)
-- [ ] T016 [P] Implement `src/server/routes/status.js` GET /api/status (auth status + cache ages)
+- [X] T009 Implement `src/util/timezone.js` Luxon helper (toLocal, formatEventRange, getWeekNumber)
+- [X] T010 Implement `src/config/store.js` for loading/saving `data/config.json` (validation per data-model)
+- [X] T011 Implement `src/auth/tokenStore.js` read/write `data/tokens.json` atomic write
+- [X] T012 [P] Implement `src/services/eventTransform.js` (expansion of multi-day all-day events, ordering)
+- [X] T013 [P] Implement `src/services/cache.js` for events/photos JSON caching layer
+- [X] T014 Implement `src/server/app.js` Express initialization (static serve + JSON body parsing)
+- [X] T015 Implement `src/server/routes/config.js` GET/PUT /api/config (validation reuse)
+- [X] T016 [P] Implement `src/server/routes/status.js` GET /api/status (auth status + cache ages)
 
 ### Phase 3: User Story 1 – Calendar Panel (P1)
 Goal: Render 21-day calendar with localized headers, ISO weeks, month labels, ordering, styling hooks.
@@ -70,7 +70,7 @@ Independent Test: With photo config, images cycle every 90s; landscape letterbox
  - [X] T031 [US2] Add placeholder message when no photos
  - [X] T032 [US2] Integrate with API `/api/photos` route stub (`src/server/routes/photos.js`)
  - [X] T032a [US2] Replace photoService & photos route stub with Graph SDK OneDrive folder listing using `@microsoft/microsoft-graph-client`.
- - [ ] T032b [US2] Rename config key from oneDriveFolderId to photoFolderPath across spec/data-model/quickstart/openapi and add default in store.js.
+ - [X] T032b [US2] Rename config key from oneDriveFolderId to photoFolderPath across spec/data-model/quickstart/openapi and add default in store.js.
 
 ### Phase 5: User Story 3 – Configuration & Ratio (P3)
 Goal: Persist settings via file edits, apply golden ratio layout.
@@ -96,7 +96,7 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
 	- [X] T041b [US4] Refactor calendarService to use Graph SDK `client.api('/me/calendars/{id}/calendarView')` (batched or sequential) with selected date range.
 		- [X] T041c [US4] Refactor photoService to use Graph SDK to list OneDrive folder children and filter image MIME types.
 	- [X] T041d [US4] Add error mapping & retry/backoff for Graph 429 / 5xx transient errors.
-	- [ ] T041e [US4] Add unit test for graphClient wrapper ensuring single initialization and token injection.
+	- [X] T041e [US4] Add unit test for graphClient wrapper ensuring single initialization and token injection.
  - [X] T042 [US4] Update status route to include remainingMinutes calculation
  - [X] T043 [US4] Implement backoff logic in refreshScheduler.js (30s, 2m, 4m, etc.) up to 5 attempts
  - [X] T044 [US4] Add test `tests/integration/tokenRefresh.test.mjs` mocking msal for success/failure/backoff
@@ -105,8 +105,8 @@ Independent Test: Start app with stored tokens -> no prompt; near expiry trigger
 Final refinements, accessibility, performance, resilience.
 
  - [X] T045 Optimize calendarService to skip unchanged event days (cache diff)
-	- [ ] T045a Add Graph throttling handling test simulating 429 response -> fallback to cache, then successful retry.
-	- [ ] T045b Add photo listing pagination handling (folders >200 items) using Graph `top` + `@odata.nextLink`.
+	- [X] T045a Add Graph throttling handling test simulating 429 response -> fallback to cache, then successful retry.
+	- [X] T045b Add photo listing pagination handling (folders >200 items) using Graph `top` + `@odata.nextLink`.
  - [X] T046 Add accessibility improvements (aria labels on cells, verify contrast ≥4.5:1, CSS audit) in styles.css
  - [X] T046a Add continuation-day visual indicator for multi-day all-day events in `public/js/calendarView.js` (e.g., subtle ellipsis or arrow) 
  - [X] T046b Implement cached fallback logic in `src/services/calendarService.js` & `src/services/photoService.js` (serve cached JSON on fetch error) 
@@ -115,15 +115,15 @@ Final refinements, accessibility, performance, resilience.
  - [X] T048 Add logging wrapper `src/util/log.js` (still console but structured prefix)
  - [X] T049 Add DST boundary test `tests/unit/dstBoundary.test.mjs`
  - [X] T050 Document security guidance in README (token file permissions)
-	- [ ] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
-	- [ ] T052 Add test (jsdom or integration) ensuring immediate first photo display before rotation interval elapses
-	- [ ] T053 Distinguish placeholders in photo panel: unauthenticated ("Sign in required") vs empty folder ("No photos found") visual/text test
-	- [ ] T054 Add favicon presence assertion (public/index.html includes link rel="icon")
+	- [X] T051 Verify photo panel left & calendar panel right ordering (DOM + CSS) per target-layout.jpg
+	- [X] T052 Add test (jsdom or integration) ensuring immediate first photo display before rotation interval elapses
+	- [X] T053 Distinguish placeholders in photo panel: unauthenticated ("Sign in required") vs empty folder ("No photos found") visual/text test
+	- [X] T054 Add favicon presence assertion (public/index.html includes link rel="icon")
 	- [X] T055 Add test ensuring month abbreviation appears on all day-of-month=1 cells within 21-day span
 	- [X] T056 Add test verifying golden ratio width tolerance ±5% when enabled (reuse ratio.test or extend)
-	- [ ] T057 Add automated test verifying no vertical/horizontal scrollbars in 1080p viewport simulation (FR-012f overflow compliance)
-	- [ ] T058 Add test verifying orientation classes applied (.portrait/.landscape) based on metadata width/height
-	- [ ] T059 Add test verifying offline banner does not alter panel width ratio (snapshot before/after offline simulation)
+	- [X] T057 Add automated test verifying no vertical/horizontal scrollbars in 1080p viewport simulation (FR-012f overflow compliance)
+	- [X] T058 Add test verifying orientation classes applied (.portrait/.landscape) based on metadata width/height
+	- [X] T059 Add test verifying offline banner does not alter panel width ratio (snapshot before/after offline simulation)
 
 ## Parallel Execution Examples
 - Express routes (events, status) can be implemented concurrently with front-end calendarView rendering using sample data.

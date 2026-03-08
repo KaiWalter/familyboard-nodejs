@@ -11,7 +11,7 @@ Deliver a kiosk-style single-page application that displays a continuously updat
 **Language/Version**: Node.js 20 (ES modules)
 **Primary Dependencies**: express, msal-node, luxon (optionally dotenv later)
 **Storage**: File-based JSON (config, tokens, cached events/photos) + in-memory maps (state, rate limits)
-**Testing**: Node built-in test runner (node:test) for unit & integration
+**Testing**: Node built-in test runner (node:test) for unit coverage (adapters/business logic); MSAL/Graph flows verified via manual smoke runs
 **Target Platform**: Linux kiosk (Chromium) / local network
 **Project Type**: Single web app (static front-end + lightweight API in same process)
 **Performance Goals**: Initial calendar render <2s (SC-001); refresh logic overhead negligible (<50ms processing / cycle); photo swap jitter <100ms
@@ -25,7 +25,7 @@ Principles (from constitution): Simplicity, Minimal Dependencies, Pragmatic Test
 |-----------|--------|-------|
 | Simplicity | PASS | Single process, few deps, no build tool. |
 | Minimal Dependencies | PASS | express, msal-node, luxon only. |
-| Pragmatic Testing | PASS | Focused unit (timezones, ordering, state) + integration (signin, callback, refresh). |
+| Pragmatic Testing | PASS | Focused unit (timezones, ordering, state); MSAL/Graph interactions covered by manual smoke per policy. |
 | Maintainability | PASS | Small modules (auth, services, routes). |
 | Security Posture | PASS | State validation, token rotation, rate limiting, audit events. |
 
@@ -131,6 +131,8 @@ tests/
 3. Accessibility pass: contrast & current-day identification test.
 4. Performance micro-bench (time event transform <50ms for 21 days of typical event volume).
 5. Enforce kiosk fullscreen styling (viewport fill, no scrollbars) and back it with automated viewport overflow tests (FR-012f).
+
+MSAL/Graph flows validated through manual smoke exercises rather than automated integration tests (2025-11-02 policy).
 
 ### Phase 5 – Documentation & Polishing
 1. README auth section sync with quickstart.

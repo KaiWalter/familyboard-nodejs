@@ -3,6 +3,10 @@ Auth Test Scaffolding
 
 Planned test coverage (foundational + user stories):
 
+> **Testing Policy Update (2025-11-02):** Automated tests remain limited to deterministic helpers and internal
+> logic. Do not mock MSAL or Microsoft Graph, and avoid scenarios that need background schedulers or multiple
+> processes. Use manual smoke checks for end-to-end authentication flows.
+
 1. State Utility
    - Generates 22-char+ base64url string.
    - Uniqueness across multiple invocations.
@@ -23,10 +27,5 @@ Planned test coverage (foundational + user stories):
    - authConfigured flag reflects presence of clientId+clientSecret.
    - remainingMinutes calculates from expiresOn.
 
-Integration (later phases):
- - /signin sets state cookie (future implementation) and redirects.
- - /callback exchanges code and persists masked token summary.
- - Refresh flow updates tokens before expiry.
- - /signout clears tokens and returns expected JSON.
-
-Use Node.js test runner (node --test). Keep tests deterministic and isolated (no real network calls; mock external requests when added).
+Integration flows are verified manually during smoke testing (sign-in, callback, refresh, sign-out). Keep
+automated cases deterministic and isolated—no external network calls or mocks.

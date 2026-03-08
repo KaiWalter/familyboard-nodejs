@@ -11,6 +11,12 @@ let _initCount = 0;
 // Mutable audit function for test instrumentation; defaults to baseAudit.
 let auditFn = baseAudit;
 
+function resetClientForTests() {
+  _client = undefined;
+  _initCount = 0;
+  auditFn = baseAudit;
+}
+
 // Test-only setter (exposed via __test) allowing unit tests to capture audit events without monkey patching ESM exports.
 function __setAudit(fn) {
   auditFn = typeof fn === 'function' ? fn : baseAudit;
@@ -87,7 +93,7 @@ async function graphRequestWithRetry(fn, context, { maxRetries = 4, baseDelayMs 
 }
 
 // Export internals for test instrumentation (non-production usage)
-export const __test = { mapGraphError, graphRequestWithRetry, __setAudit };
+export const __test = { mapGraphError, graphRequestWithRetry, __setAudit, __resetClient: resetClientForTests };
 
 // Helper: fetch calendar events for given calendarId between start and end ISO datetimes with pagination
 export async function fetchCalendarView(calendarId, startISO, endISO) {
